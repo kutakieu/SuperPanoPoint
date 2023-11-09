@@ -2,9 +2,9 @@ import hydra
 from lightning import pytorch as pl
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from omegaconf import DictConfig
-from superpanopoint.lightning_wrapper import LightningWrapper
 
 from superpanopoint.datasets import Dataset
+from superpanopoint.lightning_wrapper import LightningWrapper
 
 
 @hydra.main(version_base=None)
