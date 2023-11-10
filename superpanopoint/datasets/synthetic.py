@@ -3,7 +3,7 @@ from typing import List
 from . import BaseDataset, DataSample
 
 
-class SyntheticDataset(BaseDataset):
+class PointsDataset(BaseDataset):
     def __init__(self, data_samples: List[DataSample], **kwargs):
         super().__init__(**kwargs)
         self.data_samples = data_samples
@@ -16,4 +16,4 @@ class SyntheticDataset(BaseDataset):
         return sample.load_img(), sample.load_points()
 
     def __repr__(self):
-        return f"SyntheticDataset: {len(self)} samples"
+        return f"PointDataset: {len(self)} samples"

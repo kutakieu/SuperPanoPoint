@@ -32,8 +32,8 @@ class SynthData:
             self.added_shapes.append(shape)
 
     def export(self, out_dir: Union[str, Path], sample_id: str):
-        self.export_img(out_dir / Settings.img_dir_name / f"{sample_id}.png")
-        self.export_points(out_dir / Settings.points_dir_name / f"{sample_id}.txt")
+        self.export_img(out_dir / Settings().img_dir_name / f"{sample_id}.png")
+        self.export_points(out_dir / Settings().points_dir_name / f"{sample_id}.txt")
     
     def export_img(self, path: Union[str, Path]):
         path.parent.mkdir(parents=True, exist_ok=True)
