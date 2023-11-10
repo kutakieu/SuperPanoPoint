@@ -1,8 +1,10 @@
 from typing import List, Literal
 
+from torch.utils.data import random_split
+
 from superpanopoint import Settings
-from superpanopoint.datasets import BaseDataset, DataSample, Dataset
-from superpanopoint.utils.data import random_split
+from superpanopoint.datasets import BaseDataset, DataSample
+from superpanopoint.datasets.synthetic import SyntheticDataset
 from superpanopoint.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -24,7 +26,7 @@ class DatasetFactory:
     def create_dataset(self, mode: Mode) -> BaseDataset:
         dataset_subset = self.mode_name_to_subset[mode]
         if self.model_name == "synthetic":
-            return Dataset(dataset_subset, **self.cfg["dataset"][mode])
+            return SyntheticDataset(dataset_subset, **self.cfg["dataset"][mode])
         else:
             raise NotImplementedError
 
@@ -54,5 +56,5 @@ class DatasetFactory:
             corresponding_points_file = points_folder / (img_file.stem + ".txt")
             if not corresponding_points_file.exists():
                 logger.warn(f"File {img_file.name} does not have corresponding corner points file")
-            valid_samples.append(DataSample(img=img_file, corner=corresponding_points_file))
+            valid_samples.append(DataSample(img=img_file, points=corresponding_points_file))
         return valid_samples
