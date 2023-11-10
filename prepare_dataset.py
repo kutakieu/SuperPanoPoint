@@ -1,7 +1,7 @@
 from pathlib import Path
 from random import randint
 
-from superpanopoint.datasets.synthetic.shapes import Line, Polygon, SynthData
+from superpanopoint.datasets.data_synth.shapes import Line, Polygon, SynthData
 
 NUM_SAMPLES = 20
 W, H = 1024, 512
