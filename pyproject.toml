@@ -15,6 +15,8 @@ pydantic-settings = "^2.0.3"
 lightning = {version = "^2.1.1", optional = true, extras = ["training"]}
 python-dotenv = "^1.0.0"
 
+[tool.poetry.extras]
+training = ["lightning"]
 
 [build-system]
 requires = ["poetry-core"]
