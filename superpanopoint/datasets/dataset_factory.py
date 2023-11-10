@@ -4,10 +4,10 @@ from torch.utils.data import random_split
 
 from superpanopoint import Settings
 from superpanopoint.datasets import BaseDataset, DataSample
-from superpanopoint.datasets.synthetic import SyntheticDataset
-from superpanopoint.utils.logger import setup_logger
+from superpanopoint.datasets.synthetic import PointsDataset
+from superpanopoint.utils.logger import get_logger
 
-logger = setup_logger(__name__)
+logger = get_logger(__name__)
 
 Mode = Literal["tran", "val", "test"]
 
@@ -15,7 +15,6 @@ Mode = Literal["tran", "val", "test"]
 class DatasetFactory:
     def __init__(self, cfg) -> None:
         self.cfg = cfg
-        self.model_name = cfg["model"]["name"]
         train_subset, val_subset, test_subset = self._split_data_sources(cfg["dataset"]["sources"])
         self.mode_name_to_subset = {
             "train": train_subset,
@@ -25,10 +24,7 @@ class DatasetFactory:
 
     def create_dataset(self, mode: Mode) -> BaseDataset:
         dataset_subset = self.mode_name_to_subset[mode]
-        if self.model_name == "synthetic":
-            return SyntheticDataset(dataset_subset, **self.cfg["dataset"][mode])
-        else:
-            raise NotImplementedError
+        return PointsDataset(dataset_subset, **self.cfg["dataset"][mode])
 
     def _split_data_sources(self, cfg_data_sources):
         train_subset = val_subset = test_subset = None
@@ -48,8 +44,8 @@ class DatasetFactory:
         return train_subset, val_subset, test_subset
 
     def _extract_valid_samples(self, folder_name: str) -> List[DataSample]:
-        imgs_folder = Settings.data_dir / folder_name / Settings.img_dir_name
-        points_folder = Settings.data_dir / folder_name / Settings.points_dir_name
+        imgs_folder = Settings().data_dir / folder_name / Settings().img_dir_name
+        points_folder = Settings().data_dir / folder_name / Settings().points_dir_name
         img_files = list(imgs_folder.glob("*"))
         valid_samples = []
         for img_file in img_files:
