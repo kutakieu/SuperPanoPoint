@@ -1,3 +1,4 @@
+import json
 import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -10,6 +11,7 @@ from PIL import Image
 
 from superpanopoint import Settings
 
+from . import IMG_HEIGHT_KEY, IMG_WIDTH_KEY, POINTS_KEY
 from .utils import angle_between_vectors, get_random_color
 
 random_state = np.random.RandomState(None)
@@ -33,7 +35,7 @@ class SynthData:
 
     def export(self, out_dir: Union[str, Path], sample_id: str):
         self.export_img(out_dir / Settings().img_dir_name / f"{sample_id}.png")
-        self.export_points(out_dir / Settings().points_dir_name / f"{sample_id}.txt")
+        self.export_points(out_dir / Settings().points_dir_name / f"{sample_id}.json")
     
     def export_img(self, path: Union[str, Path]):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -41,10 +43,13 @@ class SynthData:
 
     def export_points(self, path: Union[str, Path]):
         path.parent.mkdir(parents=True, exist_ok=True)
+        points_dict = {
+            IMG_WIDTH_KEY: self.img_w,
+            IMG_HEIGHT_KEY: self.img_h,
+            POINTS_KEY: [{"x": int(point.x), "y": int(point.y)} for shape in self.added_shapes for point in shape.points]
+        }
         with open(path, "w") as f:
-            for shape in self.added_shapes:
-                for point in shape.points:
-                    f.write(f"{point.x},{point.y}\n")
+            json.dump(points_dict, f, indent=4)
 
 
 def generate_background(img_w: int, img_h: int, nb_blobs=100, min_rad_ratio=0.01,
