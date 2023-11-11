@@ -3,15 +3,21 @@ from lightning import pytorch as pl
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from omegaconf import DictConfig
 
-from superpanopoint.datasets import Dataset
+from superpanopoint import Settings
+from superpanopoint.datasets.dataset_factory import DatasetFactory
 from superpanopoint.lightning_wrapper import LightningWrapper
 
 
-@hydra.main(version_base=None)
+@hydra.main(
+    config_path=Settings().config_dir,
+    config_name=Settings().config_name,
+    version_base=None,
+)
 def main(cfg: DictConfig):
-    train_dataloader = Dataset().create_dataloader()
-    val_dataloader = Dataset().create_dataloader()
-    test_dataloader = Dataset().create_dataloader()
+    dataset_factory = DatasetFactory(cfg)
+    train_dataloader = dataset_factory.create_dataset("train").create_dataloader()
+    val_dataloader = dataset_factory.create_dataset("val").create_dataloader()
+    test_dataloader = dataset_factory.create_dataset("test").create_dataloader()
 
     model = LightningWrapper(cfg)
 
