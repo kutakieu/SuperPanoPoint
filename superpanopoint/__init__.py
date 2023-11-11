@@ -13,8 +13,11 @@ class Settings(BaseSettings):
     アルファベットの大文字小文字問わず、メンバー変数名と同じ環境変数名が存在する場合はその値が読み取られる
     """
 
+    config_dir: str = Field(default="config")
+    config_name: str = Field(default="config.yaml")
+
     data_dir: Path = Field(default="data")
-    img_dir_name: str = Field(default="img")
+    img_dir_name: str = Field(default="imgs")
     points_dir_name: str = Field(default="points")
 
     # 主にローカルでの開発時に.envファイルを参照するように設定
