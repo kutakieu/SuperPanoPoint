@@ -4,7 +4,7 @@ from torch.utils.data import random_split
 
 from superpanopoint import Settings
 from superpanopoint.datasets import BaseDataset, DataSample
-from superpanopoint.datasets.synthetic import PointsDataset
+from superpanopoint.datasets.synthetic import SingleImageDataset
 from superpanopoint.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -24,7 +24,7 @@ class DatasetFactory:
 
     def create_dataset(self, mode: Mode) -> BaseDataset:
         dataset_subset = self.mode_name_to_subset[mode]
-        return PointsDataset(dataset_subset, **self.cfg["dataset"][mode])
+        return SingleImageDataset(dataset_subset, **self.cfg["dataset"][mode])
 
     def _split_data_sources(self, cfg_data_sources):
         train_subset = val_subset = test_subset = None
@@ -49,8 +49,8 @@ class DatasetFactory:
         img_files = list(imgs_folder.glob("*"))
         valid_samples = []
         for img_file in img_files:
-            corresponding_points_file = points_folder / (img_file.stem + ".txt")
+            corresponding_points_file = points_folder / (img_file.stem + ".json")
             if not corresponding_points_file.exists():
                 logger.warn(f"File {img_file.name} does not have corresponding corner points file")
-            valid_samples.append(DataSample(img=img_file, points=corresponding_points_file))
+            valid_samples.append(DataSample(img_file=img_file, points_file=corresponding_points_file))
         return valid_samples

@@ -1,24 +1,30 @@
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
+
+from .data_synth import IMG_HEIGHT_KEY, IMG_WIDTH_KEY, POINTS_KEY
 
 
 @dataclass
 class DataSample:
-    img: Path
-    points: Path
+    img_file: Path
+    points_file: Path
 
     def load_img(self):
-        return Image.open(self.img)
+        return Image.open(self.img_file)
     
     def load_points(self):
-        points = []
-        for line in self.points.read_text().splitlines():
-            x, y = line.split(",")
-            points.append([float(x), float(y)])
-        return points
+        with open(self.points_file, "r") as f:
+            d = json.load(f)
+        point_img = np.zeros((1, d[IMG_HEIGHT_KEY], d[IMG_WIDTH_KEY]), dtype=float)
+        for point in d[POINTS_KEY]:
+            point_img[:, point["y"], point["x"]] = 1
+        return point_img
+    
 
 class BaseDataset(Dataset):
     def __init__(self, **kwargs):
