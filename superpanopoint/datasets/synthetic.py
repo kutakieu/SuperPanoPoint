@@ -41,6 +41,6 @@ class SingleImageDataset(BaseDataset):
     def apply_common_transform(self, img: torch.Tensor, points: torch.Tensor):
         img_channels = img.shape[0]
         stacked = torch.vstack([img, points])
-        stacked = self.common_transform(stacked)
-        return stacked[:img_channels], stacked[img_channels:]
+        stacked_transformed = self.common_transform(stacked)
+        return stacked_transformed[:img_channels], stacked_transformed[img_channels:]
 
