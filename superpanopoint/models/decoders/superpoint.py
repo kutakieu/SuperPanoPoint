@@ -3,6 +3,18 @@ import torch.nn.functional as F
 from torch import nn
 
 
+class SuperPointDecoder(nn.Module):
+    def __init__(self, detector: nn.Module, descriptor: nn.Module) -> None:
+        super().__init__()
+        self.detector = detector
+        self.descriptor = descriptor
+
+    def forward(self, x: torch.Tensor):
+        pointness = self.detector(x)
+        desc = self.descriptor(x)
+        return pointness, desc
+
+
 class PointDetector(nn.Module):
     def __init__(self, in_channels: int=512, out_channels: int=65) -> None:
         super().__init__()
@@ -29,6 +41,7 @@ class PointDescriptor(nn.Module):
         desc = self.layers(x)
         desc = F.interpolate(desc, scale_factor=8, mode="bicubic", align_corners=False)
         return desc.permute(0, 2, 3, 1)
+    
 
 if __name__ == "__main__":
     from superpanopoint.models.encoders.vgg import VGG
