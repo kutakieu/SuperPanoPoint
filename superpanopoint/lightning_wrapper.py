@@ -3,7 +3,8 @@ from typing import Dict
 import numpy as np
 from lightning import pytorch as pl
 
-from superpanopoint.lossfn_optimizer import optimizer_factory
+from superpanopoint.lossfn_optimizer import (loss_function_factory,
+                                             optimizer_factory)
 from superpanopoint.models import model_factory
 from superpanopoint.utils.logger import get_logger
 
@@ -14,6 +15,8 @@ class LightningWrapper(pl.LightningModule):
     def __init__(self, cfg) -> None:
         super().__init__()
         self.net = model_factory(cfg)
+        self.lossfn_pointness = loss_function_factory("binary_cross_entropy")
+        # self.lossfn_descriptor = loss_function_factory(cfg.training.lossfn.descriptor.name)
         self.optimizer_name = cfg.training.optimizer.name
         self.learning_rate = cfg.training.optimizer.learning_rate
         self.training_step_outputs = []
@@ -21,7 +24,7 @@ class LightningWrapper(pl.LightningModule):
         self.test_step_outputs = []
 
     def _clac_pointness_loss(self, pred, gt):
-        return self.loss_fn(pred, gt)
+        return self.lossfn_pointness(pred, gt)
 
     def _clac_description_loss(self, pred, gt):
         raise NotImplementedError
@@ -35,6 +38,7 @@ class LightningWrapper(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         img, points = batch
         pred_pointness, pred_desc = self.net(img)
+        print(pred_pointness.shape, points.shape)
         loss_pointness = self._clac_pointness_loss(pred_pointness, points)
         self.log("loss_train_step", loss_pointness, sync_dist=True)
         self.training_step_outputs.append({"loss": loss_pointness.detach().cpu().numpy()})

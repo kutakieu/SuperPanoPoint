@@ -7,7 +7,6 @@ dataset:
             test: 0.1
     train:
         mode: "train"
-        img_size: &img_size [1024, 512]
         aug:
             flip: True
         loader_args:
@@ -18,7 +17,6 @@ dataset:
             pin_memory: True
     val:
         mode: "test" ####### Important
-        img_size: *img_size
         aug:
             flip: False
         loader_args:
@@ -29,7 +27,6 @@ dataset:
             pin_memory: True
     test:
         mode: "test" ####### Important
-        img_size: *img_size
         aug:
             flip: False
         loader_args:
@@ -45,12 +42,12 @@ model:
     save_path: "./save"
 training:
     n_epochs: 300
-    accelerator:
-        device: "gpu"
-        gpus: 1
     optimizer:
         name: "adam"
         learning_rate: 0.0003
+    accelerator:
+        device: "cpu"
+        gpus: 1
     log_every_n_batch: 5
     early_stopping_patience: 50
 

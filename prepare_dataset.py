@@ -4,7 +4,7 @@ from random import randint
 from superpanopoint.datasets.data_synth.shapes import Line, Polygon, SynthData
 
 NUM_SAMPLES = 20
-W, H = 1024, 512
+W, H = 512, 512
 
 NUM_MIN_LINES = 3
 NUM_MAX_LINES = 10

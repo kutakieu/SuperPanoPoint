@@ -5,9 +5,9 @@ from torch import nn
 
 
 class VGG(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, num_color_chs: int=1) -> None:
         super().__init__()
-        self.layers = make_layers(cfgs["D"])
+        self.layers = make_layers(cfgs["D"], in_channels=num_color_chs)
 
     def forward(self, x):
         return self.layers(x)

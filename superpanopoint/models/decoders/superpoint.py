@@ -26,7 +26,7 @@ class PointDetector(nn.Module):
 
     def forward(self, x: torch.Tensor):
         bs, ch, h_c, w_c = x.shape
-        pointness = self.layers(x)[:, :-1, :, :].view(bs, h_c*8, w_c*8, 1)
+        pointness = self.layers(x)[:, :-1, :, :].view(bs, 1, h_c*8, w_c*8)
         return pointness
 
 class PointDescriptor(nn.Module):
@@ -57,3 +57,9 @@ if __name__ == "__main__":
     descriptor_decoder = PointDescriptor()
     descriptor_decoder_out = descriptor_decoder(out)
     print(descriptor_decoder_out.shape)
+
+    dummy_pointness_label = torch.ones(1, 512, 1024, 1)
+
+    loss_fn = nn.BCELoss()
+    loss = loss_fn(detector_decoder_out, dummy_pointness_label)
+    print(loss)

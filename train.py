@@ -19,6 +19,11 @@ def main(cfg: DictConfig):
     val_dataloader = dataset_factory.create_dataset("val").create_dataloader()
     test_dataloader = dataset_factory.create_dataset("test").create_dataloader()
 
+    for batch in val_dataloader:
+        print(batch[0].shape)
+        print(batch[1].shape)
+        break
+
     model = LightningWrapper(cfg)
 
     early_stop_callback = EarlyStopping(
