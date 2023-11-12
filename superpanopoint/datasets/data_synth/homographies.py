@@ -6,11 +6,11 @@ import numpy as np
 from PIL import Image
 
 
-def generate_random_homography(img_w: int, img_h: int, n_homographies: int=10) -> "TransformHomography":
+def generate_random_homography(img_w: int, img_h: int) -> "TransformHomography":
     """ Generate a random homography matrix """
     homography_mat = np.eye(3)
-    for _ in range(n_homographies):
-        homography_mat = homography_mat @ _select_random_homography(img_w, img_h).matrix
+    for transform in [Translation, Rotation, Scale, Shear, Perspective]:
+        homography_mat = homography_mat @ transform(img_w, img_h).matrix
     return TransformHomography(homography_mat)
 
 def _select_random_homography(img_w: int, img_h: int) -> "TransformHomography":
