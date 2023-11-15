@@ -36,6 +36,8 @@ class DoubleImageDataset(BaseDataset):
         h, w = img.shape[:2]
         homography = generate_random_homography(w, h)
         warped_img, warped_points = self.make_homographic_sample(sample, homography)
+        warped_img = self.img_transform(warped_img)
+        warped_points = self.points_transform(torch.Tensor(warped_points))
 
         correspondence_mask = homography.get_correspondence_mask()
 

@@ -26,10 +26,10 @@ def optimizer_factory(optimizer_name: OptimizerType, learning_rate: float, net):
 def pointness_loss(pred_points: Tensor, gt_points: Tensor):
     return nn.BCELoss()(pred_points, gt_points)
 
-def descriptor_loss(desc: Tensor, warped_desc: Tensor, points: Tensor, warped_points: Tensor, correspondence_mask: Tensor, _lambda: float=50.0, pos_margin = 0.5, neg_margin = 0.5):
+def descriptor_loss(desc: Tensor, warped_desc: Tensor, correspondence_mask: Tensor, _lambda: float=50.0, pos_margin = 0.5, neg_margin = 0.5):
     desc = rearrange(desc, "b h w c -> b (h w) c")
     warped_desc = rearrange(warped_desc, "b h w c -> b (h w) c")
     ele_wise_dot = torch.einsum("bnc,bmc->bnm", desc, warped_desc)
-    pos_corres_loss = _lambda * correspondence_mask * torch.maximum(0, 0.5 - ele_wise_dot)
-    neg_corres_loss = (1 - correspondence_mask) * torch.maximum(0, ele_wise_dot - 0.5)
+    pos_corres_loss = _lambda * correspondence_mask * torch.maximum(0, pos_margin - ele_wise_dot)
+    neg_corres_loss = (1 - correspondence_mask) * torch.maximum(0, ele_wise_dot - neg_margin)
     return pos_corres_loss + neg_corres_loss
