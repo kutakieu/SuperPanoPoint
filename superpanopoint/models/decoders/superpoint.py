@@ -1,6 +1,16 @@
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
+
+
+def postprocess_pointness(pointness: torch.Tensor) -> np.ndarray:
+    bs, ch, h_c, w_c = pointness.shape
+    return pointness[:, :-1, :, :].view(bs, 1, h_c*8, w_c*8).detach().cpu().numpy()
+
+def postprocess_descriptor(desc: torch.Tensor) -> np.ndarray:
+    desc = F.interpolate(desc, scale_factor=8, mode="bicubic", align_corners=False)
+    return desc.permute(0, 2, 3, 1).detach().cpu().numpy()  # (bs, h, w, ch)
 
 
 class SuperPointDecoder(nn.Module):
@@ -25,9 +35,7 @@ class PointDetector(nn.Module):
         )
 
     def forward(self, x: torch.Tensor):
-        bs, ch, h_c, w_c = x.shape
-        pointness = self.layers(x)[:, :-1, :, :].view(bs, 1, h_c*8, w_c*8)
-        return pointness
+        return self.layers(x)
 
 class PointDescriptor(nn.Module):
     def __init__(self, in_channels: int=512, out_channels: int=256) -> None:
@@ -39,8 +47,7 @@ class PointDescriptor(nn.Module):
         
     def forward(self, x: torch.Tensor):
         desc = self.layers(x)
-        desc = F.interpolate(desc, scale_factor=8, mode="bicubic", align_corners=False)
-        return desc.permute(0, 2, 3, 1)
+        return desc.permute(0, 2, 3, 1)  # (bs, h, w, ch)
     
 
 if __name__ == "__main__":

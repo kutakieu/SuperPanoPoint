@@ -33,7 +33,7 @@ class DoubleImageDataset(BaseDataset):
         sample = self.data_samples[index]
         img = self.img_transform(sample.load_img())
         points = self.points_transform(torch.Tensor(sample.load_points()))
-        h, w = img.shape[:2]
+        c, h, w = img.shape
         homography = generate_random_homography(w, h)
         warped_img, warped_points = self.make_homographic_sample(sample, homography)
         warped_img = self.img_transform(warped_img)

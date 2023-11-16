@@ -30,6 +30,6 @@ def descriptor_loss(desc: Tensor, warped_desc: Tensor, correspondence_mask: Tens
     desc = rearrange(desc, "b h w c -> b (h w) c")
     warped_desc = rearrange(warped_desc, "b h w c -> b (h w) c")
     ele_wise_dot = torch.einsum("bnc,bmc->bnm", desc, warped_desc)
-    pos_corres_loss = _lambda * correspondence_mask * torch.maximum(0, pos_margin - ele_wise_dot)
-    neg_corres_loss = (1 - correspondence_mask) * torch.maximum(0, ele_wise_dot - neg_margin)
-    return pos_corres_loss + neg_corres_loss
+    pos_corres_loss = _lambda * correspondence_mask * torch.maximum(torch.zeros_like(ele_wise_dot), pos_margin - ele_wise_dot)
+    neg_corres_loss = (1 - correspondence_mask) * torch.maximum(torch.zeros_like(ele_wise_dot), ele_wise_dot - neg_margin)
+    return torch.mean(pos_corres_loss + neg_corres_loss)

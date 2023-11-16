@@ -84,7 +84,7 @@ class TransformHomography:
             rearrange(original_indices[::scale, ::scale], "w h d -> (w h) 1 d"), 
             rearrange(transformed_indices[::scale, ::scale], "w h d -> 1 (w h) d")
             )
-        return (np.sum(diff**2, axis=2) ** 0.5) <= (scale//2)
+        return ((np.sum(diff**2, axis=2) ** 0.5) <= (scale//2)).astype(float)
     
 class Translation(TransformHomography):
     tx: float
