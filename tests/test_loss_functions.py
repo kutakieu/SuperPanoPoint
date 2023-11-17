@@ -1,3 +1,4 @@
+import torch
 from omegaconf import OmegaConf
 
 from superpanopoint.datasets.dataset_factory import DatasetFactory
@@ -16,11 +17,9 @@ def test_detector_loss():
 
         pred_pointness, pred_desc = model(img)
         pred_warped_pointness, pred_warped_desc = model(warped_img)
-        print(pred_pointness.shape, points.shape)
+        print("pred_pointness.shape, points.shape", pred_pointness.shape, points.shape)
         loss = pointness_loss(pred_pointness, points)
-        print(loss.shape)
-        assert False
-        break
+        assert loss.shape == torch.Size([])
 
 def test_descriptor_loss():
     for batch in train_dataloader:
@@ -30,6 +29,4 @@ def test_descriptor_loss():
         pred_warped_pointness, pred_warped_desc = model(warped_img)
         print(pred_desc.shape, pred_warped_desc.shape)
         loss = descriptor_loss(pred_desc, pred_warped_desc, correspondence_mask)
-        print(loss.shape)
-        assert False
-        break
+        assert loss.shape == torch.Size([])

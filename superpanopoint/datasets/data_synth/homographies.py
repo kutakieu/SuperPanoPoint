@@ -65,7 +65,7 @@ class TransformHomography:
     
     def get_transformed_indices(self, inverse=False) -> np.ndarray:
         xs, ys = np.meshgrid(np.arange(self.img_w), np.arange(self.img_h))
-        homogeneous_coords = np.concatenate([xs[:,:,np.newaxis], ys[:,:,np.newaxis], np.ones((self.img_w, self.img_h, 1))], axis=2)
+        homogeneous_coords = np.concatenate([xs[:,:,np.newaxis], ys[:,:,np.newaxis], np.ones((self.img_h, self.img_w, 1))], axis=2)
         mat = self.inverse_matrix if inverse else self.matrix
         converted_coords = (mat @ homogeneous_coords.reshape(-1, 3).T).T
 
