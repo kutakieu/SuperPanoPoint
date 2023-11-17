@@ -1,0 +1,54 @@
+dataset:
+    type: "homographic"
+    sources:
+        synthetic:
+            folder_name: "synthetic"
+            train: 0.8
+            val: 0.1
+            test: 0.1
+    train:
+        mode: "train"
+        aug:
+            flip: True
+        loader_args:
+            batch_size: 2
+            num_workers: &num_workers 4
+            shuffle: True
+            drop_last: True
+            pin_memory: True
+    val:
+        mode: "test" ####### Important
+        aug:
+            flip: False
+        loader_args:
+            batch_size: 1
+            num_workers: *num_workers
+            shuffle: False
+            drop_last: False
+            pin_memory: True
+    test:
+        mode: "test" ####### Important
+        aug:
+            flip: False
+        loader_args:
+            batch_size: 1
+            num_workers: *num_workers
+            shuffle: False
+            drop_last: False
+            pin_memory: True
+model:
+    encoder: "vgg"
+    decoder: "superpoint"
+    description_dim: 256
+    save_path: "./save"
+training:
+    n_epochs: 300
+    optimizer:
+        name: "adam"
+        learning_rate: 0.0003
+    accelerator:
+        device: "cpu"
+        gpus: 1
+    log_every_n_batch: 5
+    early_stopping_patience: 50
+
