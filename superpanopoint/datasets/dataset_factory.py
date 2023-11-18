@@ -4,6 +4,7 @@ from torch.utils.data import random_split
 
 from superpanopoint import Settings
 from superpanopoint.datasets import BaseDataset, DataSample
+from superpanopoint.datasets.homographic import DoubleImageDataset
 from superpanopoint.datasets.synthetic import SingleImageDataset
 from superpanopoint.utils.logger import get_logger
 
@@ -24,7 +25,10 @@ class DatasetFactory:
 
     def create_dataset(self, mode: Mode) -> BaseDataset:
         dataset_subset = self.mode_name_to_subset[mode]
-        return SingleImageDataset(dataset_subset, **self.cfg["dataset"][mode])
+        if self.cfg.dataset.type == "synthetic":
+            return SingleImageDataset(dataset_subset, **self.cfg["dataset"][mode])
+        elif self.cfg.dataset.type == "homographic":
+            return DoubleImageDataset(dataset_subset, **self.cfg["dataset"][mode])
 
     def _split_data_sources(self, cfg_data_sources):
         train_subset = val_subset = test_subset = None

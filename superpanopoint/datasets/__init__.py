@@ -20,9 +20,9 @@ class DataSample:
     def load_points(self):
         with open(self.points_file, "r") as f:
             d = json.load(f)
-        point_img = np.zeros((1, d[IMG_HEIGHT_KEY], d[IMG_WIDTH_KEY]), dtype=float)
+        point_img = np.zeros((d[IMG_HEIGHT_KEY], d[IMG_WIDTH_KEY], 1), dtype=float)
         for point in d[POINTS_KEY]:
-            point_img[:, point["y"], point["x"]] = 1
+            point_img[point["y"], point["x"], :] = 1
         return point_img
     
 

@@ -14,10 +14,20 @@ pydantic = "^2.4.2"
 pydantic-settings = "^2.0.3"
 lightning = {version = "^2.1.1", optional = true, extras = ["training"]}
 python-dotenv = "^1.0.0"
+einops = "^0.7.0"
 
 [tool.poetry.extras]
 training = ["lightning"]
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-env = "^1.1.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+env = [
+    "DATA_DIR=tests/data"
+]

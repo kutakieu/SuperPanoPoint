@@ -1,6 +1,33 @@
+import numpy as np
 import torch
 import torch.nn.functional as F
+from einops import rearrange
 from torch import nn
+
+
+def postprocess_pointness(pointness: torch.Tensor) -> np.ndarray:
+    """
+    rearrange pointness tensor to numpy array
+
+    Args:
+        - pointness shape: (bs, 65, h_c, w_c).  
+            - 65 is 64 + 1 (background)
+            - h_c and w_c are height and width of the output of the network
+            h_c = h / 8, w_c = w / 8 according to the paper
+
+    Returns:
+        - pointness shape: (bs, h, w)
+            - h and w are height and width of the original input image
+    """
+    # input pointness: (bs, 65, h, w)
+    pointness = pointness[:, :-1, :, :].detach().cpu().numpy()  # (bs, 64, h, w)
+    pointness = rearrange(pointness, "b h w (ch1 ch2) -> b h w ch1 ch2", ch1=8, ch2=8)  # (bs, h, w, 8, 8)
+    pointness = rearrange(pointness, "b h w c1 c2 -> b (h c1) (w c2)")  # (bs, h*8, w*8)
+    return pointness
+
+def postprocess_descriptor(desc: torch.Tensor) -> np.ndarray:
+    desc = F.interpolate(desc, scale_factor=8, mode="bicubic", align_corners=False)
+    return desc.permute(0, 2, 3, 1).detach().cpu().numpy()  # (bs, h, w, ch)
 
 
 class SuperPointDecoder(nn.Module):
@@ -25,9 +52,7 @@ class PointDetector(nn.Module):
         )
 
     def forward(self, x: torch.Tensor):
-        bs, ch, h_c, w_c = x.shape
-        pointness = self.layers(x)[:, :-1, :, :].view(bs, 1, h_c*8, w_c*8)
-        return pointness
+        return self.layers(x)
 
 class PointDescriptor(nn.Module):
     def __init__(self, in_channels: int=512, out_channels: int=256) -> None:
@@ -39,8 +64,7 @@ class PointDescriptor(nn.Module):
         
     def forward(self, x: torch.Tensor):
         desc = self.layers(x)
-        desc = F.interpolate(desc, scale_factor=8, mode="bicubic", align_corners=False)
-        return desc.permute(0, 2, 3, 1)
+        return desc.permute(0, 2, 3, 1)  # (bs, h, w, ch)
     
 
 if __name__ == "__main__":
