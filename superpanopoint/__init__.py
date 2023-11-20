@@ -20,5 +20,9 @@ class Settings(BaseSettings):
     img_dir_name: str = Field(default="imgs")
     points_dir_name: str = Field(default="points")
 
+    img_width_key: str = Field(default="img_w")
+    img_height_key: str = Field(default="img_h")
+    points_key: str = Field(default="points")
+
     # 主にローカルでの開発時に.envファイルを参照するように設定
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
