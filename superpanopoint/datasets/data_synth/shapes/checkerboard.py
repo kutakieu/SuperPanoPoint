@@ -17,8 +17,10 @@ class Checkerboard(Shape):
     img_height: int
     background_color: Optional[Tuple[int]] = None
     points: List[Point2D] = field(default_factory=list)
+    points_for_drawing: np.ndarray = field(init=False)  # shape: (num_points, 2)
     rows: Optional[int] = None
     cols: Optional[int] = None
+
 
     def __post_init__(self):
         if self.background_color is None:
@@ -28,134 +30,75 @@ class Checkerboard(Shape):
         if self.cols is None:
             self.cols = random_state.randint(3, 7)
         if not self.points:
-            self.points = self.__create_points()
-            
+            self.points_for_drawing, self.points = self.__create_points()
+
+
     def __create_points(self) -> List[Point2D]:
-        s = min((self.img_width - 1) // self.cols, (self.img_height - 1) // self.rows)  # size of a cell
+        cell_size = min((self.img_width - 1) // self.cols, (self.img_height - 1) // self.rows)  # size of a cell
         num_total_points = (self.rows + 1) * (self.cols + 1)
         x_coord = np.tile(range(self.cols + 1), self.rows + 1).reshape((num_total_points, 1))
         y_coord = np.repeat(range(self.rows + 1), self.cols + 1).reshape((num_total_points, 1))
-        xys = s * np.concatenate([x_coord, y_coord], axis=1)
+        xys = cell_size * np.concatenate([x_coord, y_coord], axis=1)
 
         transform = generate_random_homography(self.img_width, self.img_height)
-        return transform.apply_to_coordinates(xys).astype(int)
-            
-    def ____create_points(self) -> List[Point2D]:
-        s = min((self.img_width - 1) // self.cols, (self.img_height - 1) // self.rows)  # size of a cell
-        x_coord = np.tile(range(self.cols + 1),
-                        self.rows + 1).reshape(((self.rows + 1) * (self.cols + 1), 1))
-        y_coord = np.repeat(range(self.rows + 1),
-                            self.cols + 1).reshape(((self.rows + 1) * (self.cols + 1), 1))
-        self.points = points = s * np.concatenate([x_coord, y_coord], axis=1)
-        # self.warped_points = self.points
+        points = transform.apply_to_coordinates(xys).astype(int)
+        return points, [Point2D(p[0], p[1]) for p in keep_points_inside(points, self.img_width, self.img_height)]
 
-        # Warp the grid using an affine transformation and an homography
-        # The parameters of the transformations are constrained
-        # to get transformations not too far-fetched
-        transform_params=(0.05, 0.15)
-        alpha_affine = np.max(img.shape) * (transform_params[0]
-                                            + random_state.rand() * transform_params[1])
-        center_square = np.float32(img.shape) // 2
-        min_dim = min(img.shape)
-        square_size = min_dim // 3
-        pts1 = np.float32([center_square + square_size,
-                        [center_square[0]+square_size, center_square[1]-square_size],
-                        center_square - square_size,
-                        [center_square[0]-square_size, center_square[1]+square_size]])
-        pts2 = pts1 + random_state.uniform(-alpha_affine,
-                                        alpha_affine,
-                                        size=pts1.shape).astype(np.float32)
-        affine_transform = cv2.getAffineTransform(pts1[:3], pts2[:3])
-        pts2 = pts1 + random_state.uniform(-alpha_affine / 2,
-                                        alpha_affine / 2,
-                                        size=pts1.shape).astype(np.float32)
-        perspective_transform = cv2.getPerspectiveTransform(pts1, pts2)
-
-        # Apply the affine transformation
-        points = np.transpose(np.concatenate((points,
-                                            np.ones(((self.rows + 1) * (self.cols + 1), 1))),
-                                            axis=1))
-        warped_points = np.transpose(np.dot(affine_transform, points))
-
-        # Apply the homography
-        warped_col0 = np.add(np.sum(np.multiply(warped_points,
-                                                perspective_transform[0, :2]), axis=1),
-                            perspective_transform[0, 2])
-        warped_col1 = np.add(np.sum(np.multiply(warped_points,
-                                                perspective_transform[1, :2]), axis=1),
-                            perspective_transform[1, 2])
-        warped_col2 = np.add(np.sum(np.multiply(warped_points,
-                                                perspective_transform[2, :2]), axis=1),
-                            perspective_transform[2, 2])
-        warped_col0 = np.divide(warped_col0, warped_col2)
-        warped_col1 = np.divide(warped_col1, warped_col2)
-        warped_points = np.concatenate([warped_col0[:, None], warped_col1[:, None]], axis=1)
-        self.warped_points = warped_points.astype(int)
 
     def draw(self, img: np.ndarray, bg_img: np.ndarray):
-        print(self.points.shape)
         background_color = int(np.mean(bg_img))
-        min_dim = min(self.img_height, self.img_width)
+        points_2d = self.points_for_drawing.reshape(self.rows + 1, self.cols + 1, 2)
 
         # Fill the rectangles
         colors = np.zeros((self.rows * self.cols,), np.int32)
-        for i in range(self.rows):
-            for j in range(self.cols):
+        for r in range(self.rows):
+            for c in range(self.cols):
                 # Get a color that contrast with the neighboring cells
-                if i == 0 and j == 0:
+                if r == 0 and c == 0:
                     col = get_random_color(background_color)
                 else:
                     neighboring_colors = []
-                    if i != 0:
-                        neighboring_colors.append(colors[(i-1) * self.cols + j])
-                    if j != 0:
-                        neighboring_colors.append(colors[i * self.cols + j - 1])
+                    if r != 0:
+                        neighboring_colors.append(colors[(r-1) * self.cols + c])
+                    if c != 0:
+                        neighboring_colors.append(colors[r * self.cols + c - 1])
                     col = _get_different_color(np.array(neighboring_colors))
-                colors[i * self.cols + j] = col
+                colors[r * self.cols + c] = col
                 # Fill the cell
-                cv2.fillConvexPoly(img, np.array([(self.points[i * (self.cols + 1) + j, 0],
-                                                self.points[i * (self.cols + 1) + j, 1]),
-                                                (self.points[i * (self.cols + 1) + j + 1, 0],
-                                                self.points[i * (self.cols + 1) + j + 1, 1]),
-                                                (self.points[(i + 1)
-                                                                * (self.cols + 1) + j + 1, 0],
-                                                self.points[(i + 1)
-                                                                * (self.cols + 1) + j + 1, 1]),
-                                                (self.points[(i + 1)
-                                                                * (self.cols + 1) + j, 0],
-                                                self.points[(i + 1)
-                                                                * (self.cols + 1) + j, 1])]),
-                                col)
+                cv2.fillConvexPoly(img,
+                                   np.array([
+                                       (points_2d[r, c, 0], points_2d[r, c, 1]),
+                                       (points_2d[r, c+1, 0], points_2d[r, c+1, 1]),
+                                       (points_2d[r+1, c+1, 0], points_2d[r+1, c+1, 1]),
+                                       (points_2d[r+1, c, 0], points_2d[r+1, c, 1])]),
+                                    col)
 
         # Draw lines on the boundaries of the board at random
         nb_rows = random_state.randint(2, self.rows + 2)
         nb_cols = random_state.randint(2, self.cols + 2)
+        min_dim = min(self.img_height, self.img_width)
         thickness = random_state.randint(min_dim * 0.01, min_dim * 0.015)
         for _ in range(nb_rows):
-            row_idx = random_state.randint(self.rows + 1)
-            col_idx1 = random_state.randint(self.cols + 1)
-            col_idx2 = random_state.randint(self.cols + 1)
+            r = random_state.randint(self.rows + 1)
+            c1 = random_state.randint(self.cols + 1)
+            c2 = random_state.randint(self.cols + 1)
             col = get_random_color(background_color)
-            cv2.line(img, (self.points[row_idx * (self.cols + 1) + col_idx1, 0],
-                        self.points[row_idx * (self.cols + 1) + col_idx1, 1]),
-                    (self.points[row_idx * (self.cols + 1) + col_idx2, 0],
-                    self.points[row_idx * (self.cols + 1) + col_idx2, 1]),
+            cv2.line(img, 
+                    (points_2d[r, c1, 0], points_2d[r, c1, 1]),
+                    (points_2d[r, c2, 0], points_2d[r, c2, 1]),
                     col, thickness)
         for _ in range(nb_cols):
-            col_idx = random_state.randint(self.cols + 1)
-            row_idx1 = random_state.randint(self.rows + 1)
-            row_idx2 = random_state.randint(self.rows + 1)
+            c = random_state.randint(self.cols + 1)
+            r1 = random_state.randint(self.rows + 1)
+            r2 = random_state.randint(self.rows + 1)
             col = get_random_color(background_color)
-            cv2.line(img, (self.points[row_idx1 * (self.cols + 1) + col_idx, 0],
-                        self.points[row_idx1 * (self.cols + 1) + col_idx, 1]),
-                    (self.points[row_idx2 * (self.cols + 1) + col_idx, 0],
-                    self.points[row_idx2 * (self.cols + 1) + col_idx, 1]),
+            cv2.line(img, 
+                    (points_2d[r1, c, 0], points_2d[r1, c, 1]),
+                    (points_2d[r2, c, 0], points_2d[r2, c, 1]),
                     col, thickness)
+        return True
 
-        # Keep only the points inside the image
-        points = keep_points_inside(self.points, img.shape[:2])
-        return points
-    
+
     def drawing_coords(self):
         raise NotImplementedError
 
