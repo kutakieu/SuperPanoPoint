@@ -65,7 +65,19 @@ class TransformHomography:
     
     def get_transformed_indices(self, inverse=False) -> np.ndarray:
         xs, ys = np.meshgrid(np.arange(self.img_w), np.arange(self.img_h))
-        homogeneous_coords = np.concatenate([xs[:,:,np.newaxis], ys[:,:,np.newaxis], np.ones((self.img_h, self.img_w, 1))], axis=2)
+        xys = np.concatenate([xs.reshape(-1)[:, np.newaxis], ys.reshape(-1)[:, np.newaxis]], axis=1)
+        return self.apply_to_coordinates(xys, inverse).reshape(self.img_h, self.img_w, 2).astype(np.float32)
+    
+    def apply_to_coordinates(self, xys: np.ndarray, inverse=False) -> np.ndarray:
+        """
+        apply homography to coordinates
+        Args:
+            xys: coordinates to apply homography. shape is (N, 2)
+        Returns:
+            warped coordinates. shape is (N, 2)
+        """
+        ws = np.ones((len(xys), 1))
+        homogeneous_coords = np.concatenate([xys, ws], axis=1)
         mat = self.inverse_matrix if inverse else self.matrix
         converted_coords = (mat @ homogeneous_coords.reshape(-1, 3).T).T
 
@@ -74,7 +86,8 @@ class TransformHomography:
         w = np.repeat(w[:, np.newaxis], 3, axis=1)
         normalized_coords = np.multiply(converted_coords, w.reshape(-1, 3))
 
-        return normalized_coords[:, :2].reshape(self.img_h, self.img_w, 2).astype(np.float32)
+        return normalized_coords[:, :2]
+
     
     def get_correspondence_mask(self, inverse=False, scale: int=8) -> np.ndarray:
         xs, ys = np.meshgrid(np.arange(self.img_w), np.arange(self.img_h))
