@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
-from .data_synth import IMG_HEIGHT_KEY, IMG_WIDTH_KEY, POINTS_KEY
+from superpanopoint import Settings
 
 
 @dataclass
@@ -20,8 +20,8 @@ class DataSample:
     def load_points(self):
         with open(self.points_file, "r") as f:
             d = json.load(f)
-        point_img = np.zeros((d[IMG_HEIGHT_KEY], d[IMG_WIDTH_KEY], 1), dtype=float)
-        for point in d[POINTS_KEY]:
+        point_img = np.zeros((d[Settings().img_height_key], d[Settings().img_width_key], 1), dtype=float)
+        for point in d[Settings().points_key]:
             point_img[point["y"], point["x"], :] = 1
         return point_img
     
