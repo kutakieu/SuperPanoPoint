@@ -1,22 +1,23 @@
 import json
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 import cv2
 import numpy as np
 from PIL import Image
 
 from superpanopoint import Settings
+from superpanopoint.datasets.pano.c2e import c2e
 
 from .shapes.base import Shape
 from .shapes.utils import generate_background
 
 
 class SynthData:
-    def __init__(self, img_w: int, img_h: int) -> None:
+    def __init__(self, img_w: int, img_h: int, bg_img: Optional[np.ndarray]=None) -> None:
         self.img_w = img_w
         self.img_h = img_h
-        self.bg_img = generate_background(img_w, img_h)
+        self.bg_img = generate_background(img_w, img_h) if bg_img is None else bg_img
         self.synth_img = self.bg_img.copy()
         self.added_shapes: List[Shape] = []
 
@@ -54,3 +55,21 @@ class SynthData:
         }
         with open(path, "w") as f:
             json.dump(points_dict, f, indent=4)
+
+
+class PanoSynthData:
+    def __init__(self, synth_data_list: List[SynthData], pers_w: int=512, pers_h: int=512, pano_w: int=2048, pano_h: int=1024) -> None:
+        self.synth_data_list = synth_data_list
+        self.synth_img = self._pers_imgs_to_pano(pers_w, pers_h, pano_w, pano_h)
+
+    def _pers_imgs_to_pano(self, pers_w: int, pers_h: int, pano_w: int, pano_h: int):
+        pano_data = np.zeros((pers_h, pers_w*6), dtype=np.uint8)
+        return c2e(pano_data, pano_h, pano_w, mode='bilinear', cube_format='horizon').astype(np.uint8)
+    
+    # def extract_points(self):
+
+
+
+    def export(self, out_dir: Union[str, Path], sample_id: str):
+        self.export_img(out_dir / Settings().img_dir_name / f"{sample_id}.png")
+        self.export_points(out_dir / Settings().points_dir_name / f"{sample_id}.json")
