@@ -28,10 +28,10 @@ def keep_points_inside(points: np.ndarray, img_w: int, img_h: int):
 
 def random_fillPoly(img: np.ndarray, points: np.ndarray, color: int):
     """Return a random fillPoly function"""
-    if random_state.rand() < 0.4:
-        return cv2.fillPoly(img, [points], color)
-    else:
+    if random_state.rand() > 0.3:
         return fillPoly_with_noise(img, points, color)
+    else:
+        return cv2.fillPoly(img, [points], color)
 
 
 def fillPoly_with_noise(img: np.ndarray, points: np.ndarray, color: int):

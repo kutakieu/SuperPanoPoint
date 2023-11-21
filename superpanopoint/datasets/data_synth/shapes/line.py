@@ -33,6 +33,8 @@ class Line(Shape):
         return [p1, p2]
 
     def draw(self, img: np.ndarray, bg_img: np.ndarray):
+        if np.linalg.norm(np.array(self.points[0].as_xy()) - np.array(self.points[1].as_xy())) < 10:
+            return False
         if self.is_overlap(self.drawing_coords(img), img, bg_img):
             return False
         if self.color is None:
