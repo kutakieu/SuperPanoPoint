@@ -1,14 +1,15 @@
 from dataclasses import dataclass, field
+from random import randint
 from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
 
-from superpanopoint.datasets.data_synth.homographies import \
-    generate_random_homography
+from superpanopoint.datasets.data_synth.homographies import (
+    Perspective, Rotation, Scale, compose_homographies)
 from superpanopoint.datasets.data_synth.shapes.base import Point2D, Shape
 from superpanopoint.datasets.data_synth.shapes.utils import (
-    get_random_color, keep_points_inside, random_state)
+    get_random_color, keep_points_inside, random_fillPoly, random_state)
 
 
 @dataclass
@@ -40,7 +41,11 @@ class Checkerboard(Shape):
         y_coord = np.repeat(range(self.rows + 1), self.cols + 1).reshape((num_total_points, 1))
         xys = cell_size * np.concatenate([x_coord, y_coord], axis=1)
 
-        transform = generate_random_homography(self.img_width, self.img_height)
+        transform = compose_homographies([
+            Scale(self.img_width, self.img_height, scale=random_state.uniform(0.5, 0.8)),
+            Rotation(self.img_width, self.img_height, angle=random_state.uniform(-15, 15)),
+            Perspective(self.img_width, self.img_height),
+            ], self.img_width, self.img_height)
         points = transform.apply_to_coordinates(xys).astype(int)
         return points, [Point2D(p[0], p[1]) for p in keep_points_inside(points, self.img_width, self.img_height)]
 
@@ -65,19 +70,20 @@ class Checkerboard(Shape):
                     col = _get_different_color(np.array(neighboring_colors))
                 colors[r * self.cols + c] = col
                 # Fill the cell
-                cv2.fillConvexPoly(img,
-                                   np.array([
-                                       (points_2d[r, c, 0], points_2d[r, c, 1]),
-                                       (points_2d[r, c+1, 0], points_2d[r, c+1, 1]),
-                                       (points_2d[r+1, c+1, 0], points_2d[r+1, c+1, 1]),
-                                       (points_2d[r+1, c, 0], points_2d[r+1, c, 1])]),
+                random_fillPoly(img,
+                                np.array([
+                                    (points_2d[r, c, 0], points_2d[r, c, 1]),
+                                    (points_2d[r, c+1, 0], points_2d[r, c+1, 1]),
+                                    (points_2d[r+1, c+1, 0], points_2d[r+1, c+1, 1]),
+                                    (points_2d[r+1, c, 0], points_2d[r+1, c, 1])]),
                                     col)
+                                        
 
         # Draw lines on the boundaries of the board at random
         nb_rows = random_state.randint(2, self.rows + 2)
         nb_cols = random_state.randint(2, self.cols + 2)
         min_dim = min(self.img_height, self.img_width)
-        thickness = random_state.randint(min_dim * 0.01, min_dim * 0.015)
+        thickness = random_state.randint(min_dim * 0.01, min_dim * 0.012)
         for _ in range(nb_rows):
             r = random_state.randint(self.rows + 1)
             c1 = random_state.randint(self.cols + 1)

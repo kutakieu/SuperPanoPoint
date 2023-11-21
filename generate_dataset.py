@@ -17,7 +17,7 @@ NUM_MIN_STARS = 1
 NUM_MAX_STARS = 3
 
 def main():
-    out_dir = Path("data/synthetic")
+    out_dir = Path("data/synthetic/persepective")
     out_dir.mkdir(parents=True, exist_ok=True)
     for i in range(NUM_SAMPLES):
         synth_data = SynthData(W, H)

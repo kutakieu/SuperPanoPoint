@@ -1,5 +1,6 @@
 import math
 from dataclasses import dataclass, field
+from random import randint
 from typing import List, Optional, Tuple
 
 import cv2
@@ -7,7 +8,7 @@ import numpy as np
 
 from superpanopoint.datasets.data_synth.shapes.base import Point2D, Shape
 from superpanopoint.datasets.data_synth.shapes.utils import (
-    get_random_color, keep_points_inside, random_state)
+    get_random_color, keep_points_inside, random_fillPoly, random_state)
 
 
 @dataclass
@@ -18,8 +19,9 @@ class Cube(Shape):
     points: List[Point2D] = field(default_factory=list)
     points_for_drawing: np.ndarray = field(init=False)  # shape: (num_points, 2)
     min_size_ratio: float=0.2
-    scale_interval=(0.4, 0.6)
-    trans_interval=(0.5, 0.2)
+    scale_interval=(0.3, 0.4)
+    trans_interval=(0.3, 0.1)
+    only_perfect: bool=True  # only cubes with all the corners visible
 
 
     def __post_init__(self):
@@ -33,16 +35,17 @@ class Cube(Shape):
 
 
     def draw(self, img: np.ndarray, bg_img: np.ndarray):
+        if self.only_perfect and len(self.points) < 7:  # not enough corners
+            return False
         # Get the three visible faces
         faces = np.array([[7, 3, 1, 5], [7, 5, 4, 6], [7, 6, 2, 3]])
         min_dim = min(self.img_height, self.img_width)
         # Fill the faces and draw the contours
-        background_color = int(np.mean(bg_img))
-        face_col = get_random_color(background_color)
+        face_col = get_random_color(int(np.mean(bg_img)))
         for i in [0, 1, 2]:
             cur_face_col = max(0, min(255, face_col + random_state.randint(-15, 15)))
-            cv2.fillPoly(img, [self.points_for_drawing[faces[i]].reshape((-1, 1, 2))], cur_face_col)
-        thickness = random_state.randint(min_dim * 0.003, min_dim * 0.015)
+            random_fillPoly(img, self.points_for_drawing[faces[i]].reshape((-1, 1, 2)), cur_face_col)
+        thickness = random_state.randint(min_dim * 0.003, min_dim * 0.01)
         for i in [0, 1, 2]:
             for j in [0, 1, 2, 3]:
                 col_edge = (face_col + 128 + random_state.randint(-64, 64)) % 256  # color that constrats with the face color
@@ -110,8 +113,6 @@ class Cube(Shape):
         # The front one is 7
         cube_xys = cube_xyzs[:, :2]  # project on the plane z=0
         return cube_xys.astype(int)
-
-
 
 
 if __name__ == "__main__":

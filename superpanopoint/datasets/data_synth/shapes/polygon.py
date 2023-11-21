@@ -7,7 +7,7 @@ import numpy as np
 
 from superpanopoint.datasets.data_synth.shapes.base import Point2D, Shape
 from superpanopoint.datasets.data_synth.shapes.utils import (
-    angle_between_vectors, get_random_color, random_state)
+    angle_between_vectors, get_random_color, random_fillPoly, random_state)
 
 
 @dataclass
@@ -19,8 +19,6 @@ class Polygon(Shape):
     points: List[Point2D] = field(default_factory=list)
 
     def __post_init__(self):
-        if self.color is None:
-            self.color = get_random_color(0)
         if self.points is None or len(self.points) < 3:
             self.points = self.__create_points()
 
@@ -59,9 +57,11 @@ class Polygon(Shape):
             return False
         if self.is_overlap(self.drawing_coords(img), img, bg_img):
             return False
+        if self.color is None:
+            self.color = get_random_color(int(np.mean(bg_img)))
         
         corners = np.array([p.as_xy() for p in self.points], dtype=int)
-        cv2.fillPoly(img, [corners], self.color)
+        random_fillPoly(img, corners, self.color)
         return True
 
     def drawing_coords(self, img: np.ndarray):
