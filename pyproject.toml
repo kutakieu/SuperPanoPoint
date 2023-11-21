@@ -15,6 +15,7 @@ pydantic-settings = "^2.0.3"
 lightning = {version = "^2.1.1", optional = true, extras = ["training"]}
 python-dotenv = "^1.0.0"
 einops = "^0.7.0"
+scipy = "^1.11.4"
 
 [tool.poetry.extras]
 training = ["lightning"]
