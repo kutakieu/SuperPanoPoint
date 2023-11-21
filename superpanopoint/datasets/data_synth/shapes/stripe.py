@@ -8,7 +8,7 @@ from superpanopoint.datasets.data_synth.homographies import \
     generate_random_homography
 from superpanopoint.datasets.data_synth.shapes.base import Point2D, Shape
 from superpanopoint.datasets.data_synth.shapes.utils import (
-    get_random_color, keep_points_inside, random_state)
+    get_random_color, keep_points_inside, random_fillPoly, random_state)
 
 
 @dataclass
@@ -60,19 +60,19 @@ class Stripe(Shape):
         color = get_random_color(background_color)
         for i in range(self.n_cols):
             color = (color + 128 + random_state.randint(-30, 30)) % 256
-            cv2.fillConvexPoly(img,
-                               np.array([
-                                   (self.points_for_drawing[i, 0], self.points_for_drawing[i, 1]),
-                                   (self.points_for_drawing[i+1, 0], self.points_for_drawing[i+1, 1]),
-                                   (self.points_for_drawing[i+self.n_cols+2, 0], self.points_for_drawing[i+self.n_cols+2, 1]),
-                                   (self.points_for_drawing[i+self.n_cols+1, 0], self.points_for_drawing[i+self.n_cols+1, 1])
-                                   ]),
-                               color)
+            random_fillPoly(img,
+                            np.array([
+                                (self.points_for_drawing[i, 0], self.points_for_drawing[i, 1]),
+                                (self.points_for_drawing[i+1, 0], self.points_for_drawing[i+1, 1]),
+                                (self.points_for_drawing[i+self.n_cols+2, 0], self.points_for_drawing[i+self.n_cols+2, 1]),
+                                (self.points_for_drawing[i+self.n_cols+1, 0], self.points_for_drawing[i+self.n_cols+1, 1])
+                                ]),
+                            color)
 
         # Draw lines on the boundaries of the stripes at random
         nb_rows = random_state.randint(2, 5)
         nb_cols = random_state.randint(2, self.n_cols + 2)
-        thickness = random_state.randint(min_dim * 0.01, min_dim * 0.015)
+        thickness = random_state.randint(min_dim * 0.005, min_dim * 0.01)
         for _ in range(nb_rows):
             row_idx = random_state.choice([0, self.n_cols + 1])
             col_idx1 = random_state.randint(self.n_cols + 1)

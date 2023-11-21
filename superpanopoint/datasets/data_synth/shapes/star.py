@@ -22,13 +22,11 @@ class Star(Shape):
     def __post_init__(self):
         if self.num_branches is None:
             self.num_branches = random_state.randint(3, 6)
-        if self.color is None:
-            self.color = get_random_color(0)
         if self.points is None or len(self.points) < 3:
             self.points = self.__create_points()
         if self.thickness is None:
             min_dim = min(self.img_height, self.img_width)
-            self.thickness = random_state.randint(min_dim * 0.01, min_dim * 0.02)
+            self.thickness = random_state.randint(min_dim * 0.005, min_dim * 0.01)
 
     def __create_points(self) -> List[Point2D]:
         min_dim = min(self.img_height, self.img_width)
@@ -51,6 +49,8 @@ class Star(Shape):
     def draw(self, img: np.ndarray, bg_img: np.ndarray):
         if self.is_overlap(self.drawing_coords(img), img, bg_img):
             return False
+        if self.color is None:
+            self.color = get_random_color(int(np.mean(bg_img)))
 
         for i in range(1, self.num_branches + 1):
             cv2.line(img, 

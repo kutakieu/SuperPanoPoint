@@ -1,5 +1,5 @@
 from random import choice, randint, uniform
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import cv2
 import numpy as np
@@ -12,6 +12,12 @@ def generate_random_homography(img_w: int, img_h: int) -> "TransformHomography":
     homography_mat = np.eye(3)
     for transform in [Translation, Rotation, Scale, Perspective]:
         homography_mat = homography_mat @ transform(img_w, img_h).matrix
+    return TransformHomography(homography_mat, img_w, img_h)
+
+def compose_homographies(homographies: List["TransformHomography"], img_w: int, img_h: int) -> "TransformHomography":
+    homography_mat = np.eye(3)
+    for homography in homographies:
+        homography_mat = homography_mat @ homography.matrix
     return TransformHomography(homography_mat, img_w, img_h)
 
 def _select_random_homography(img_w: int, img_h: int) -> "TransformHomography":

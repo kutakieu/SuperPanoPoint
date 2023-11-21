@@ -26,6 +26,28 @@ def keep_points_inside(points: np.ndarray, img_w: int, img_h: int):
     return points[mask, :]
 
 
+def random_fillPoly(img: np.ndarray, points: np.ndarray, color: int):
+    """Return a random fillPoly function"""
+    if random_state.rand() < 0.4:
+        return cv2.fillPoly(img, [points], color)
+    else:
+        return fillPoly_with_noise(img, points, color)
+
+
+def fillPoly_with_noise(img: np.ndarray, points: np.ndarray, color: int):
+    """Fill a polygon with a color and add some noise"""
+    h, w = img.shape[:2]
+    tmp_img = np.zeros((h, w), dtype=np.uint8)
+    cv2.fillPoly(tmp_img, [points], 1)
+    rows, cols = np.where(tmp_img > 0)
+    base_noise_img = generate_background(w, h, nb_blobs=100, min_rad_ratio=0.01, min_kernel_size=50, max_kernel_size=51).astype(int)
+    mean_col = np.mean(base_noise_img[rows, cols])
+    base_noise_img = base_noise_img * (color / mean_col)
+    base_noise_img = np.minimum(np.maximum(base_noise_img, 0), 255).astype(np.uint8)
+    img[rows, cols] = base_noise_img[rows, cols]
+    return img
+
+
 def generate_background(img_w: int, img_h: int, nb_blobs=100, min_rad_ratio=0.01,
                         max_rad_ratio=0.05, min_kernel_size=50, max_kernel_size=300):
     """ Generate a customized background image
@@ -54,3 +76,14 @@ def generate_background(img_w: int, img_h: int, nb_blobs=100, min_rad_ratio=0.01
     kernel_size = random_state.randint(min_kernel_size, max_kernel_size)
     cv2.blur(img, (kernel_size, kernel_size), img)
     return img
+
+
+def generate_symetric_background(img_w: int, img_h: int, nb_blobs=100, min_rad_ratio=0.03,
+                        max_rad_ratio=0.05, min_kernel_size=100, max_kernel_size=300):
+    if img_w % 2 == 1 or img_h % 2 == 1:
+        raise ValueError("The image dimensions must be even")
+    bg_img = generate_background(img_w//2, img_h//2, nb_blobs, min_rad_ratio, max_rad_ratio, min_kernel_size, max_kernel_size)
+    v_flip = bg_img[::-1, :]
+    h_flip = bg_img[:, ::-1]
+    hv_flip = bg_img[::-1, ::-1]
+    return np.concatenate([np.concatenate([bg_img, h_flip], axis=1), np.concatenate([v_flip, hv_flip], axis=1)], axis=0)

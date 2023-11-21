@@ -18,25 +18,25 @@ class Line(Shape):
     points: List[Point2D] = field(default_factory=list)
 
     def __post_init__(self):
-        if self.color is None:
-            self.color = get_random_color(0)
         if self.points is None or len(self.points) < 2:
             self.points = self.__create_points()
         min_dim = min(self.img_height, self.img_width)
-        self.thickness = random_state.randint(min_dim * 0.01, min_dim * 0.02)
+        self.thickness = random_state.randint(min_dim * 0.005, min_dim * 0.015)
 
     def __create_points(self) -> (Point2D, Point2D):
-        x1 = random_state.randint(self.img_width)
-        y1 = random_state.randint(self.img_height)
+        x1 = random_state.randint(4, self.img_width-4)
+        y1 = random_state.randint(4, self.img_height-4)
         p1 = Point2D(x1, y1)
-        x2 = random_state.randint(self.img_width)
-        y2 = random_state.randint(self.img_height)
+        x2 = random_state.randint(4, self.img_width-4)
+        y2 = random_state.randint(4, self.img_height-4)
         p2 = Point2D(x2, y2)
         return [p1, p2]
 
     def draw(self, img: np.ndarray, bg_img: np.ndarray):
         if self.is_overlap(self.drawing_coords(img), img, bg_img):
             return False
+        if self.color is None:
+            self.color = get_random_color(int(np.mean(bg_img)))
         cv2.line(img, self.points[0].as_xy(), self.points[1].as_xy(), self.color, self.thickness)
         return True
     
