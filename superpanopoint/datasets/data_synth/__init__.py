@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from random import choice, randint
 from typing import List, Optional, Union
 
 import cv2
@@ -10,8 +11,28 @@ from superpanopoint import Settings
 from superpanopoint.datasets.pano.c2e import c2e
 from superpanopoint.datasets.pano.utils import uv2coor, xyz2uv, xyzcube
 
+from .shapes import Checkerboard, Cube, Line, Polygon, Star, Stripe
 from .shapes.base import Shape
 from .shapes.utils import generate_background
+
+NUM_MIN_LINES = 3
+NUM_MAX_LINES = 10
+NUM_MIN_POLYGONS = 10
+NUM_MAX_POLYGONS = 10
+NUM_MIN_STARS = 1
+NUM_MAX_STARS = 3
+
+
+def generate_perspective_sample(img_w: int, img_h: int) -> "SynthData":
+    synth_data = SynthData(img_w, img_h)
+    if randint(0, 1) == 0:
+        adding_shape = choice([Cube, Checkerboard, Stripe])
+        synth_data.add_shapes(adding_shape, 1)
+
+    synth_data.add_shapes(Line, randint(NUM_MIN_LINES, NUM_MAX_LINES))
+    synth_data.add_shapes(Polygon, randint(NUM_MIN_POLYGONS, NUM_MAX_POLYGONS))
+    synth_data.add_shapes(Star, randint(NUM_MIN_STARS, NUM_MAX_STARS))
+    return synth_data
 
 
 class SynthData:
@@ -29,7 +50,7 @@ class SynthData:
 
     def draw_shape(self, shape: "Shape"):
         if shape.draw(self.synth_img, self.bg_img):
-            self.added_shapes.append(shape)
+            self.added_shapes.append(shape)        
 
     def export(self, out_dir: Union[str, Path], sample_id: str):
         self.export_img(out_dir / Settings().img_dir_name / f"{sample_id}.png")
@@ -56,6 +77,13 @@ class SynthData:
         }
         with open(path, "w") as f:
             json.dump(points_dict, f, indent=4)
+
+    def points_as_img(self) -> np.ndarray:
+        point_img = np.zeros((self.img_h, self.img_w, 1), dtype=float)
+        for shape in self.added_shapes:
+            for point in shape.points:
+                point_img[point.y, point.x, :] = 1
+        return point_img
 
 
 class PanoSynthData:

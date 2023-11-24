@@ -12,7 +12,7 @@ class VGG(nn.Module):
     def forward(self, x):
         return self.layers(x)
 
-def make_layers(cfg: List[Union[str, int]], batch_norm: bool = False, in_channels: int = 3) -> nn.Sequential:
+def make_layers(cfg: List[Union[str, int]], batch_norm: bool = True, in_channels: int = 3) -> nn.Sequential:
     layers: List[nn.Module] = []
     for v in cfg:
         if v == "M":

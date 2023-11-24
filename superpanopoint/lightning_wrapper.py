@@ -15,7 +15,7 @@ class LightningWrapper(pl.LightningModule):
     def __init__(self, cfg) -> None:
         super().__init__()
         self.net = model_factory(cfg)
-        self.lossfn_pointness = loss_function_factory("binary_cross_entropy")
+        self.lossfn_pointness = loss_function_factory("cross_entropy")
         # self.lossfn_descriptor = loss_function_factory(cfg.training.lossfn.descriptor.name)
         self.optimizer_name = cfg.training.optimizer.name
         self.learning_rate = cfg.training.optimizer.learning_rate
@@ -38,7 +38,6 @@ class LightningWrapper(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         img, points = batch
         pred_pointness, pred_desc = self.net(img)
-        print(pred_pointness.shape, points.shape)
         loss_pointness = self._clac_pointness_loss(pred_pointness, points)
         self.log("loss_train_step", loss_pointness, sync_dist=True)
         self.training_step_outputs.append({"loss": loss_pointness.detach().cpu().numpy()})

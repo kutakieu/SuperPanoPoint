@@ -11,7 +11,9 @@ OptimizerType = Literal["sgd", "adam"]
 
 def loss_function_factory(loss_function_name: LossFunctionType):
     if loss_function_name == "cross_entropy":
-        return nn.CrossEntropyLoss()
+        weight = torch.full([65], 100.0, dtype=torch.float32)
+        weight[-1] = 0.1
+        return nn.CrossEntropyLoss(weight=weight)
     elif loss_function_name == "binary_cross_entropy":
         return nn.BCELoss()
     raise NotImplementedError

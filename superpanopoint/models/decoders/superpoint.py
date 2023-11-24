@@ -19,11 +19,14 @@ def postprocess_pointness(pointness: torch.Tensor) -> np.ndarray:
         - pointness shape: (bs, h, w)
             - h and w are height and width of the original input image
     """
-    # input pointness: (bs, 65, h, w)
-    pointness = pointness[:, :-1, :, :].detach().cpu().numpy()  # (bs, 64, h, w)
-    pointness = rearrange(pointness, "b h w (ch1 ch2) -> b h w ch1 ch2", ch1=8, ch2=8)  # (bs, h, w, 8, 8)
-    pointness = rearrange(pointness, "b h w c1 c2 -> b (h c1) (w c2)")  # (bs, h*8, w*8)
-    return pointness
+    # input pointness: (bs, 65, h_c, w_c)
+    max_idx = torch.argmax(pointness, dim=1, keepdim=True)
+    pointness = torch.FloatTensor(pointness.shape)
+    pointness.zero_().scatter_(1, max_idx, 1)
+    pointness = pointness[:, :-1, :, :].detach().cpu().numpy()  # (bs, 64, h_c, w_c)
+    pointness = rearrange(pointness, "b (ch1 ch2) h w -> b h w ch1 ch2", ch1=8, ch2=8)  # (bs, h_c, w_c, 8, 8)
+    pointness = rearrange(pointness, "b h w c1 c2 -> b (h c1) (w c2)")  # (bs, h_c*8, w_c*8)
+    return pointness  # (bs, h, w)
 
 def postprocess_descriptor(desc: torch.Tensor) -> np.ndarray:
     desc = F.interpolate(desc, scale_factor=8, mode="bicubic", align_corners=False)
