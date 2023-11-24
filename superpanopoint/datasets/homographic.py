@@ -10,7 +10,7 @@ from .data_synth.homographies import (TransformHomography,
                                       generate_random_homography)
 
 
-class DoubleImageDataset(BaseDataset):
+class HomographicDataset(BaseDataset):
     def __init__(self, data_samples: List[DataSample], **kwargs):
         super().__init__(**kwargs)
         self.data_samples = data_samples
