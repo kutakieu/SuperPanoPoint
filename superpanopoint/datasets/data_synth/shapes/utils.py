@@ -40,8 +40,10 @@ def fillPoly_with_noise(img: np.ndarray, points: np.ndarray, color: int):
     tmp_img = np.zeros((h, w), dtype=np.uint8)
     cv2.fillPoly(tmp_img, [points], 1)
     rows, cols = np.where(tmp_img > 0)
+    if len(rows) == 0:
+        return img
     base_noise_img = generate_background(w, h, nb_blobs=100, min_rad_ratio=0.01, min_kernel_size=50, max_kernel_size=51).astype(int)
-    mean_col = np.mean(base_noise_img[rows, cols])
+    mean_col = max(1, np.mean(base_noise_img[rows, cols]))
     base_noise_img = base_noise_img * (color / mean_col)
     base_noise_img = np.minimum(np.maximum(base_noise_img, 0), 255).astype(np.uint8)
     img[rows, cols] = base_noise_img[rows, cols]
