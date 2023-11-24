@@ -5,6 +5,7 @@ from PIL import Image
 from torchvision.transforms.v2 import Compose, Normalize, ToTensor
 
 from . import model_factory
+from .decoders.superpoint import postprocess_pointness
 
 
 class PointDetector:
@@ -31,15 +32,15 @@ class PointDetector:
     def _preprocess(self, img: np.ndarray) -> torch.Tensor:
         if isinstance(img, Image.Image):
             img = np.array(img)
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        if len(img.shape) == 3 and img.shape[2] == 3:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = self.img_transform(img)
         return img.unsqueeze(0)
     
-    def _postprocess(self, img: torch.Tensor) -> np.ndarray:
-        img = img.squeeze(0)
-        img = img.detach().cpu().numpy()
-        return img
+    def _postprocess(self, pred_pointness: torch.Tensor) -> np.ndarray:
+        """input: (1, 65, H/8, W/8), output: (H, W)"""
+        return postprocess_pointness(pred_pointness)[0]
     
     def _to_points_array(self, img: np.ndarray) -> np.ndarray:
-        return np.array(np.where(img > 0.5)).T
+        return np.array(np.where(img > 0)).T
         
