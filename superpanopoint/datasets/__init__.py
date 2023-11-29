@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from PIL import Image
@@ -12,12 +13,20 @@ from superpanopoint import Settings
 @dataclass
 class DataSample:
     img_file: Path
-    points_file: Path
+    points_file: Optional[Path]
 
-    def load_img(self):
+    def load_img(self, as_gray=True):
+        if as_gray:
+            return Image.open(self.img_file).convert("L")
         return Image.open(self.img_file)
     
-    def load_points(self):
+    def load_points(self)->Optional[np.ndarray]:
+        """
+        Returns:
+            Optional[np.ndarray]: binary points image as a numpy array shape: (h, w, 1)
+        """
+        if self.points_file is None:
+            return None
         with open(self.points_file, "r") as f:
             d = json.load(f)
         point_img = np.zeros((d[Settings().img_height_key], d[Settings().img_width_key], 1), dtype=float)
