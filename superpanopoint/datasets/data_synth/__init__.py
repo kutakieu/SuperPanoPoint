@@ -15,12 +15,12 @@ from .shapes import Checkerboard, Cube, Line, Polygon, Star, Stripe
 from .shapes.base import Shape
 from .shapes.utils import generate_background
 
-NUM_MIN_LINES = 3
-NUM_MAX_LINES = 10
+NUM_MIN_LINES = 5
+NUM_MAX_LINES = 20
 NUM_MIN_POLYGONS = 10
 NUM_MAX_POLYGONS = 10
-NUM_MIN_STARS = 1
-NUM_MAX_STARS = 3
+NUM_MIN_STARS = 3
+NUM_MAX_STARS = 5
 
 
 def generate_perspective_sample(img_w: int, img_h: int) -> "SynthData":

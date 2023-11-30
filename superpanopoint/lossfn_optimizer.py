@@ -11,8 +11,8 @@ OptimizerType = Literal["sgd", "adam"]
 
 def loss_function_factory(loss_function_name: LossFunctionType):
     if loss_function_name == "cross_entropy":
-        weight = torch.full([65], 100.0, dtype=torch.float32)
-        weight[-1] = 0.1
+        weight = torch.full([65], 4096.0, dtype=torch.float32)
+        weight[-1] = 1
         return nn.CrossEntropyLoss(weight=weight)
     elif loss_function_name == "binary_cross_entropy":
         return nn.BCELoss()
@@ -25,10 +25,12 @@ def optimizer_factory(optimizer_name: OptimizerType, learning_rate: float, net):
         return optim.Adam(net.parameters(), lr=learning_rate)
     raise NotImplementedError
 
-def pointness_loss(pred_points: Tensor, gt_points: Tensor):
-    return nn.BCELoss()(pred_points, gt_points)
+def make_pointness_loss_fn(weight=1000.0):
+        weight = torch.full([65], weight, dtype=torch.float32)
+        weight[-1] = 1
+        return nn.CrossEntropyLoss(weight=weight)
 
-def descriptor_loss(desc: Tensor, warped_desc: Tensor, correspondence_mask: Tensor, _lambda: float=50.0, pos_margin = 0.5, neg_margin = 0.5):
+def descriptor_loss_fn(desc: Tensor, warped_desc: Tensor, correspondence_mask: Tensor, _lambda: float=50.0, pos_margin = 0.5, neg_margin = 0.5):
     desc = rearrange(desc, "b h w c -> b (h w) c")
     warped_desc = rearrange(warped_desc, "b h w c -> b (h w) c")
     ele_wise_dot = torch.einsum("bnc,bmc->bnm", desc, warped_desc)

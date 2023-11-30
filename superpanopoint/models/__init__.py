@@ -1,3 +1,5 @@
+from typing import Optional
+
 from torch import nn
 
 from .decoders.superpoint import (PointDescriptor, PointDetector,
@@ -6,10 +8,12 @@ from .encoders.vgg import VGG
 
 
 def model_factory(cfg):
-    encoder = _encoder_factory(cfg.model.encoder)
-    decoder = _decoder_factory(cfg.model.decoder, cfg.model.description_dim)
+    if cfg.model.name in ["magicpoint", "superpoint"]:
+        encoder = _encoder_factory(cfg.model.encoder)
+        decoder = _decoder_factory(cfg.model.decoder, cfg.model.get("description_dim"))
+    else:
+        raise NotImplementedError
     return nn.Sequential(encoder, decoder)
-
 
 def _encoder_factory(encoder_name: str):
     if encoder_name == "vgg":
@@ -18,11 +22,13 @@ def _encoder_factory(encoder_name: str):
         raise NotImplementedError
 
     
-def _decoder_factory(decoder_name: str, description_dim: int):
+def _decoder_factory(decoder_name: str, description_dim: Optional[int]):
     if decoder_name == "superpoint":
         return SuperPointDecoder(
             detector=PointDetector(in_channels=512, out_channels=65),
             descriptor=PointDescriptor(in_channels=512, out_channels=description_dim),
         )
+    elif decoder_name == "magicpoint":
+        return PointDetector(in_channels=512, out_channels=65)
     else:
         raise NotImplementedError
