@@ -24,5 +24,7 @@ class Settings(BaseSettings):
     img_height_key: str = Field(default="img_h")
     points_key: str = Field(default="points")
 
+    wandb_api_key: str = Field(default="")
+
     # 主にローカルでの開発時に.envファイルを参照するように設定
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

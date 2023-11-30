@@ -1,8 +1,10 @@
 import hydra
 from lightning import pytorch as pl
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
-from omegaconf import DictConfig
+from lightning.pytorch.loggers import WandbLogger
+from omegaconf import DictConfig, OmegaConf
 
+import wandb
 from superpanopoint import Settings
 from superpanopoint.datasets.dataset_factory import DatasetFactory
 from superpanopoint.lightning_wrapper import LightningWrapper
@@ -19,11 +21,6 @@ def main(cfg: DictConfig):
     val_dataloader = dataset_factory.create_dataset("val").create_dataloader()
     test_dataloader = dataset_factory.create_dataset("test").create_dataloader()
 
-    for batch in val_dataloader:
-        print(batch[0].shape)
-        print(batch[1].shape)
-        break
-
     model = LightningWrapper(cfg)
 
     early_stop_callback = EarlyStopping(
@@ -34,6 +31,13 @@ def main(cfg: DictConfig):
         mode="min",
     )
 
+    if Settings().wandb_api_key:
+        wandb.login(key=Settings().wandb_api_key)
+        wandb_logger = WandbLogger(
+            project=cfg.model.name, 
+            config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
+            )
+
     trainer = pl.Trainer(
         accelerator=cfg.training.accelerator.device,
         val_check_interval=1.0,
@@ -41,6 +45,7 @@ def main(cfg: DictConfig):
         log_every_n_steps=cfg.training.log_every_n_batch,
         max_epochs=cfg.training.n_epochs,
         callbacks=[early_stop_callback],
+        logger=wandb_logger if Settings().wandb_api_key else None,
     )
 
     trainer.fit(
