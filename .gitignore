@@ -1,5 +1,8 @@
 outputs
 lightning_logs
+wandb
+magicpoint
+superpoint
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
