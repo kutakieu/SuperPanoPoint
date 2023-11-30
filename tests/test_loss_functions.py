@@ -2,7 +2,8 @@ import torch
 from omegaconf import OmegaConf
 
 from superpanopoint.datasets.dataset_factory import DatasetFactory
-from superpanopoint.lossfn_optimizer import descriptor_loss, pointness_loss
+from superpanopoint.lossfn_optimizer import (descriptor_loss_fn,
+                                             make_pointness_loss_fn)
 from superpanopoint.models import model_factory
 
 cfg = OmegaConf.load("tests/config/config_homographic.yaml")
@@ -17,7 +18,8 @@ def test_detector_loss():
 
         pred_pointness, pred_desc = model(img)
         pred_warped_pointness, pred_warped_desc = model(warped_img)
-        loss = pointness_loss(pred_pointness, points)
+        lossfn = make_pointness_loss_fn()
+        loss = lossfn(pred_pointness, points)
         assert loss.shape == torch.Size([])
 
 def test_descriptor_loss():
@@ -26,6 +28,6 @@ def test_descriptor_loss():
 
         pred_pointness, pred_desc = model(img)
         pred_warped_pointness, pred_warped_desc = model(warped_img)
-        loss = descriptor_loss(pred_desc, pred_warped_desc, correspondence_mask)
+        loss = descriptor_loss_fn(pred_desc, pred_warped_desc, correspondence_mask)
         assert loss.shape == torch.Size([])
 
