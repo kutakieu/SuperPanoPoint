@@ -57,7 +57,7 @@ class SynthData:
         self.export_points(out_dir / Settings().points_dir_name / f"{sample_id}.json")
     
     def export_img(self, path: Union[str, Path], with_points: bool = False):
-        path.parent.mkdir(parents=True, exist_ok=True)
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
         if with_points:
             new_img = self.synth_img.copy()
             new_img = np.repeat(new_img[:, :, np.newaxis], 3, axis=2)

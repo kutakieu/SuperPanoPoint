@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def non_maximum_suppression(pointness: np.ndarray, radius: int=4, strict=False) -> np.ndarray:
+def non_maximum_suppression(pointness: np.ndarray, radius: int=4, strict=True) -> np.ndarray:
     """
     Args:
         pointness (np.ndarray): probability map of pointness. (h, w)
@@ -17,8 +17,8 @@ def non_maximum_suppression(pointness: np.ndarray, radius: int=4, strict=False) 
             continue
         else:
             orig_pointness = pointness[y, x]
-            area_xs = np.arange(max(0, x - radius), min(pointness.shape[0], x + radius + 1))
-            area_ys = np.arange(max(0, y - radius), min(pointness.shape[1], y + radius + 1))
+            area_xs = np.arange(max(0, x - radius), min(pointness.shape[1], x + radius + 1))
+            area_ys = np.arange(max(0, y - radius), min(pointness.shape[0], y + radius + 1))
             mesh_xs, mesh_ys = np.meshgrid(area_xs, area_ys)
             mesh_xs = mesh_xs.flatten()
             mesh_ys = mesh_ys.flatten()

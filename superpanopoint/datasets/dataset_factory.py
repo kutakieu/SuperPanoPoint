@@ -1,11 +1,13 @@
 from typing import List, Literal
 
+from PIL import Image
 from torch.utils.data import random_split
 
 from superpanopoint import Settings
 from superpanopoint.datasets import BaseDataset, DataSample
 from superpanopoint.datasets.homographic import HomographicDataset
 from superpanopoint.datasets.synthetic import SyntheticDataset
+from superpanopoint.models.detector import Predictor
 from superpanopoint.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -28,7 +30,8 @@ class DatasetFactory:
         if self.cfg.dataset.type == "synthetic":
             return SyntheticDataset(dataset_subset, **self.cfg["dataset"][mode], **self.cfg["dataset"][mode]["aug"])
         elif self.cfg.dataset.type == "homographic":
-            return HomographicDataset(dataset_subset, **self.cfg["dataset"][mode])
+            detector = Predictor(self.cfg, self.cfg.dataset.detector_model, device='cpu')
+            return HomographicDataset(dataset_subset, point_detector=detector, **self.cfg["dataset"][mode], **self.cfg["dataset"][mode]["aug"])
 
     def _split_data_sources(self, cfg_data_sources):
         train_subset = val_subset = test_subset = None
@@ -53,8 +56,9 @@ class DatasetFactory:
         img_files = list(imgs_folder.glob("*"))
         valid_samples = []
         for img_file in img_files:
-            corresponding_points_file = points_folder / (img_file.stem + ".json")
-            if not corresponding_points_file.exists():
-                logger.warn(f"File {img_file.name} does not have corresponding corner points file")
-            valid_samples.append(DataSample(img_file=img_file, points_file=corresponding_points_file))
+            if min(Image.open(img_file).size) < self.cfg.dataset.get("min_img_size", 360):
+                continue
+            points_file = points_folder / f"{img_file.stem}.json" if (points_folder / f"{img_file.stem}.json").exists() else None
+            valid_samples.append(DataSample(img_file=img_file, points_file=points_file))
+        print('num samples:', len(valid_samples))
         return valid_samples

@@ -21,6 +21,7 @@ def postprocess_pointness(pointness: torch.Tensor, apply_nms=True) -> np.ndarray
         - pointness shape: (bs, h, w)
             - h and w are height and width of the original input image
     """
+    pointness = pointness.detach().cpu()
     max_idx = torch.argmax(pointness, dim=1, keepdim=True)
     point_mask = torch.FloatTensor(pointness.shape)
     point_mask.zero_().scatter_(1, max_idx, 1)

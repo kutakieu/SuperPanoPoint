@@ -6,9 +6,12 @@ dataset:
             train: 0.6
             val: 0.2
             test: 0.2
+    min_img_size: &min_img_size 360
+    detector_model: "model.pth"
     train:
         mode: "train"
         aug:
+            crop_size: *min_img_size
             flip: True
         loader_args:
             batch_size: 2
@@ -19,6 +22,7 @@ dataset:
     val:
         mode: "test" ####### Important
         aug:
+            crop_size: *min_img_size
             flip: False
         loader_args:
             batch_size: 1
@@ -29,6 +33,7 @@ dataset:
     test:
         mode: "test" ####### Important
         aug:
+            crop_size: *min_img_size
             flip: False
         loader_args:
             batch_size: 1
@@ -43,6 +48,7 @@ model:
     save_path: "./save"
 training:
     n_epochs: 300
+    desc_loss_weight: 250
     optimizer:
         name: "adam"
         learning_rate: 0.0003
