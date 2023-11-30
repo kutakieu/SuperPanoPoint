@@ -10,9 +10,9 @@ dataset:
         mode: "train"
         aug:
             gen_onthefly: True
-            num_samples: 4096
+            num_samples: 2048
         loader_args:
-            batch_size: 6
+            batch_size: 5
             num_workers: &num_workers 4
             shuffle: True
             drop_last: True
@@ -38,18 +38,20 @@ dataset:
             drop_last: False
             pin_memory: True
 model:
+    name: "magicpoint"
     encoder: "vgg"
-    decoder: "superpoint"
+    decoder: "magicpoint"
     description_dim: 256
     save_path: "./save"
 training:
     n_epochs: 100
     optimizer:
         name: "adam"
-        learning_rate: 0.0003
+        learning_rate: 0.001
     accelerator:
         device: "gpu"
         gpus: 1
     log_every_n_batch: 5
     early_stopping_patience: 50
+    pointness_loss_weight: 1000
 
