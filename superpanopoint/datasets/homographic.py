@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import torch
@@ -14,7 +14,7 @@ from .data_synth.homographies import (TransformHomography,
 
 
 class HomographicDataset(BaseDataset):
-    def __init__(self, data_samples: List[DataSample], point_detector: MagicPointPredictor, crop_size: int=360, flip: bool=True, **kwargs):
+    def __init__(self, data_samples: List[DataSample], point_detector: Optional[MagicPointPredictor], crop_size: int=360, flip: bool=True, **kwargs):
         super().__init__(**kwargs)
         self.data_samples = data_samples
         self.point_detector = point_detector
@@ -35,6 +35,8 @@ class HomographicDataset(BaseDataset):
         sample = self.data_samples[index]
         img = np.array(sample.load_img(as_gray=True))
         if sample.points_file is None:
+            if self.point_detector is None:
+                raise ValueError("point_detector must be provided if points_file is None")
             points, desc = self.point_detector(img, return_as_array=False)
             points = points[:, :, np.newaxis]
         else:
