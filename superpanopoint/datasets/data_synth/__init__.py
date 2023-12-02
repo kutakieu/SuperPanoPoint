@@ -32,6 +32,7 @@ def generate_perspective_sample(img_w: int, img_h: int) -> "SynthData":
     synth_data.add_shapes(Line, randint(NUM_MIN_LINES, NUM_MAX_LINES))
     synth_data.add_shapes(Polygon, randint(NUM_MIN_POLYGONS, NUM_MAX_POLYGONS))
     synth_data.add_shapes(Star, randint(NUM_MIN_STARS, NUM_MAX_STARS))
+    synth_data.add_noise()
     return synth_data
 
 
@@ -50,7 +51,12 @@ class SynthData:
 
     def draw_shape(self, shape: "Shape"):
         if shape.draw(self.synth_img, self.bg_img):
-            self.added_shapes.append(shape)        
+            self.added_shapes.append(shape)
+
+    def add_noise(self, mean: int=0, sigma_min: int=3, sigma_max: int=10):
+        sigma = randint(sigma_min, sigma_max)
+        noise = np.random.normal(mean, sigma, self.synth_img.shape)
+        self.synth_img = np.clip(self.synth_img + noise, 0, 255).astype(np.uint8)
 
     def export(self, out_dir: Union[str, Path], sample_id: str):
         self.export_img(out_dir / Settings().img_dir_name / f"{sample_id}.png")
@@ -82,7 +88,8 @@ class SynthData:
         point_img = np.zeros((self.img_h, self.img_w, 1), dtype=float)
         for shape in self.added_shapes:
             for point in shape.points:
-                point_img[point.y, point.x, :] = 1
+                if 0 <= point.x < self.img_w and 0 <= point.y < self.img_h:
+                    point_img[point.y, point.x, :] = 1
         return point_img
 
 

@@ -7,7 +7,7 @@ from superpanopoint import Settings
 from superpanopoint.datasets import BaseDataset, DataSample
 from superpanopoint.datasets.homographic import HomographicDataset
 from superpanopoint.datasets.synthetic import SyntheticDataset
-from superpanopoint.models.detector import Predictor
+from superpanopoint.models.predictor import MagicPointPredictor
 from superpanopoint.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -30,7 +30,8 @@ class DatasetFactory:
         if self.cfg.dataset.type == "synthetic":
             return SyntheticDataset(dataset_subset, **self.cfg["dataset"][mode], **self.cfg["dataset"][mode]["aug"])
         elif self.cfg.dataset.type == "homographic":
-            detector = Predictor(self.cfg, self.cfg.dataset.detector_model, device='cpu')
+            detector = None
+            # detector = MagicPointPredictor(self.cfg, self.cfg.dataset.detector_model, device='cpu')
             return HomographicDataset(dataset_subset, point_detector=detector, **self.cfg["dataset"][mode], **self.cfg["dataset"][mode]["aug"])
 
     def _split_data_sources(self, cfg_data_sources):

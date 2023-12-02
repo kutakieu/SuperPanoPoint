@@ -52,6 +52,7 @@ def main(cfg: DictConfig):
         model=model,
         train_dataloaders=train_dataloader,
         val_dataloaders=val_dataloader,
+        ckpt_path=cfg.training.get("resume_from"),
     )
 
     trainer.test(model=model, dataloaders=test_dataloader)
