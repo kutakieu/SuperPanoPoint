@@ -3,14 +3,14 @@ from typing import List
 import numpy as np
 
 from superpanopoint import Settings
-from superpanopoint.models.detector import Predictor
+from superpanopoint.models.predictor import MagicPointPredictor
 from superpanopoint.models.utils.postprocess import non_maximum_suppression
 
 from .homographies import TransformHomography, generate_random_homography
 
 
 class HomographicAdapter:
-    def __init__(self, img_w: int, img_h: int, detector: Predictor, num_homographyies: int=100) -> None:
+    def __init__(self, img_w: int, img_h: int, detector: MagicPointPredictor, num_homographyies: int=100) -> None:
         self.homographies: List[TransformHomography] = [generate_random_homography(img_w, img_h) for _ in range(num_homographyies)]
         self.detector = detector
 
@@ -18,7 +18,7 @@ class HomographicAdapter:
         pseudo_label = np.zeros((img.shape[0], img.shape[1]), dtype=float)
         for homography in self.homographies:
             warped_img = homography.apply(img)
-            point_img, desc = self.detector(warped_img)
+            point_img = self.detector(warped_img)
             pseudo_label += homography.apply_inverse(point_img)
         pseudo_label = np.heaviside(pseudo_label-0.5, 1)
 

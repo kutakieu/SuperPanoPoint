@@ -83,7 +83,7 @@ class Checkerboard(Shape):
         nb_rows = random_state.randint(2, self.rows + 2)
         nb_cols = random_state.randint(2, self.cols + 2)
         min_dim = min(self.img_height, self.img_width)
-        thickness = random_state.randint(min_dim * 0.01, min_dim * 0.012)
+        thickness = random_state.randint(min_dim * 0.01, min_dim * 0.015)
         for _ in range(nb_rows):
             r = random_state.randint(self.rows + 1)
             c1 = random_state.randint(self.cols + 1)

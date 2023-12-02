@@ -82,7 +82,8 @@ class SynthData:
         point_img = np.zeros((self.img_h, self.img_w, 1), dtype=float)
         for shape in self.added_shapes:
             for point in shape.points:
-                point_img[point.y, point.x, :] = 1
+                if 0 <= point.x < self.img_w and 0 <= point.y < self.img_h:
+                    point_img[point.y, point.x, :] = 1
         return point_img
 
 

@@ -45,7 +45,7 @@ class Cube(Shape):
         for i in [0, 1, 2]:
             cur_face_col = max(0, min(255, face_col + random_state.randint(-15, 15)))
             random_fillPoly(img, self.points_for_drawing[faces[i]].reshape((-1, 1, 2)), cur_face_col)
-        thickness = random_state.randint(min_dim * 0.003, min_dim * 0.01)
+        thickness = max(1, random_state.randint(min_dim * 0.003, min_dim * 0.01))
         for i in [0, 1, 2]:
             for j in [0, 1, 2, 3]:
                 col_edge = (face_col + 128 + random_state.randint(-64, 64)) % 256  # color that constrats with the face color
