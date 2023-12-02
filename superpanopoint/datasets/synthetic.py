@@ -10,22 +10,17 @@ from .data_synth import generate_perspective_sample
 
 
 class SyntheticDataset(BaseDataset):
-    def __init__(self, data_samples: List[DataSample], gen_onthefly: bool, num_samples: Optional[int]=None, flip=False, **kwargs):
+    def __init__(self, data_samples: List[DataSample], gen_onthefly: bool, num_samples: Optional[int]=None, **kwargs):
         super().__init__(**kwargs)
         self.data_samples = data_samples
         self.gen_onthefly = gen_onthefly
         self.num_samples = num_samples
         self.img_w = kwargs.get("img_w", 512)
         self.img_h = kwargs.get("img_h", 512)
-        self.flip = flip
         self.img_transform = Compose([
             ToTensor(),
             Normalize(mean=[0.449], std=[0.226])
         ])
-        common_transform_list = []
-        if flip:
-            common_transform_list.append(RandomHorizontalFlip())
-        self.common_transform = Compose(common_transform_list) if common_transform_list else None
 
     def __len__(self):
         if self.gen_onthefly:
@@ -43,8 +38,6 @@ class SyntheticDataset(BaseDataset):
             points = sample.load_points()
         img = self.img_transform(img)
         points = torch.Tensor(points).permute(2, 0, 1) # (h, w, c) => (c h w)
-        if self.common_transform:
-            img, points = self.apply_common_transform(img, points)
         
         return img, self.rearrange_points_img(points)
 

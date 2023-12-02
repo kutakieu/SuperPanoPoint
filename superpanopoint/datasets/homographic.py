@@ -6,7 +6,7 @@ from einops import rearrange
 from PIL import Image
 from torchvision.transforms.v2 import Compose, Normalize, ToTensor
 
-from superpanopoint.models.detector import Predictor
+from superpanopoint.models.predictor import MagicPointPredictor
 
 from . import BaseDataset, DataSample
 from .data_synth.homographies import (TransformHomography,
@@ -14,7 +14,7 @@ from .data_synth.homographies import (TransformHomography,
 
 
 class HomographicDataset(BaseDataset):
-    def __init__(self, data_samples: List[DataSample], point_detector: Predictor, crop_size: int=360, flip: bool=True, **kwargs):
+    def __init__(self, data_samples: List[DataSample], point_detector: MagicPointPredictor, crop_size: int=360, flip: bool=True, **kwargs):
         super().__init__(**kwargs)
         self.data_samples = data_samples
         self.point_detector = point_detector
