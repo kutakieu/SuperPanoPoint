@@ -15,8 +15,8 @@ class SyntheticDataset(BaseDataset):
         self.data_samples = data_samples
         self.gen_onthefly = gen_onthefly
         self.num_samples = num_samples
-        self.img_w = kwargs.get("img_w", 512)
-        self.img_h = kwargs.get("img_h", 512)
+        self.img_w = kwargs.get("img_w", 256)
+        self.img_h = kwargs.get("img_h", 256)
         self.img_transform = Compose([
             ToTensor(),
             Normalize(mean=[0.449], std=[0.226])
