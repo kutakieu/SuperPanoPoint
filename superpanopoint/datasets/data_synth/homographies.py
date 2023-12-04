@@ -10,7 +10,7 @@ from PIL import Image
 def generate_random_homography(img_w: int, img_h: int) -> "TransformHomography":
     """ Generate a random homography matrix """
     homography_mat = np.eye(3)
-    for transform in [Translation, Rotation, Scale, Perspective]:
+    for transform in [Translation, Scale, Rotation, Perspective]:
         homography_mat = homography_mat @ transform(img_w, img_h).matrix
     return TransformHomography(homography_mat, img_w, img_h)
 
@@ -117,6 +117,9 @@ class Translation(TransformHomography):
             [0, 0, 1]
         ])
 
+    def __repr__(self) -> str:
+        return f"tx: {self.tx}, ty: {self.ty}"
+
 class Rotation(TransformHomography):
     center_x: float
     center_y: float
@@ -129,18 +132,24 @@ class Rotation(TransformHomography):
             cv2.getRotationMatrix2D((self.center_x, self.center_y), angle, 1),
             np.array([0, 0, 1])
         ])
+    
+    def __repr__(self) -> str:
+        return f"angle: {self.angle}, center_x: {self.center_x}, center_y: {self.center_y}"
 
 class Scale(TransformHomography):
     sx: float
     sy: float
     def __init__(self, img_w: int, img_h: int, scale: Optional[float]=None, center_x: Optional[int]=None, center_y: Optional[int]=None) -> None:
+        self.scale = uniform(0.5, 2.0) if scale is None else scale
         self.center_x = randint(0, img_w) if center_x is None else center_x
         self.center_y = randint(0, img_h) if center_y is None else center_y
-        self.scale = scale if scale is not None else uniform(0.5, 2)
         self.matrix = np.vstack([
             cv2.getRotationMatrix2D((self.center_x, self.center_y), 0, self.scale), 
             np.array([0, 0, 1])
         ])
+    
+    def __repr__(self) -> str:
+        return f"scale: {self.scale}, center_x: {self.center_x}, center_y: {self.center_y}"
 
 class Shear(TransformHomography):
     sx: float
