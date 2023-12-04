@@ -66,7 +66,8 @@ class SuperPointPredictor(BasePredictor):
         return pointness, pred_desc
 
 class MagicPointPredictor(BasePredictor):
-    def __call__(self, img: np.ndarray, return_as_array: bool=False) -> tuple[np.ndarray, np.ndarray]:
+    def __call__(self, img: Union[Image.Image, np.ndarray], return_as_array: bool=False) -> np.ndarray:
+        img = np.array(img)
         h,w = img.shape[:2]
         img_tensor = self._preprocess(img).to(self.device)
         with torch.no_grad():
@@ -79,4 +80,16 @@ class MagicPointPredictor(BasePredictor):
             pointness = cv2.resize(pointness, (w, h), interpolation=cv2.INTER_NEAREST)
         return pointness
     
+    def calc_prob_map(self, img: Union[Image.Image, np.ndarray], omit_edge_width: int=4) -> float:
+        img = np.array(img)
+        h,w = img.shape[:2]
+        img_tensor = self._preprocess(img).to(self.device)
+        with torch.no_grad():
+            pointness = self.net(img_tensor)
+            pointness = postprocess_pointness(pointness, apply_nms=False)[0]
+        pointness[:, :omit_edge_width] = 0
+        pointness[:, -omit_edge_width:] = 0
+        pointness[:omit_edge_width, :] = 0
+        pointness[-omit_edge_width:, :] = 0
+        return cv2.resize(pointness, (w, h), interpolation=cv2.INTER_CUBIC)
     

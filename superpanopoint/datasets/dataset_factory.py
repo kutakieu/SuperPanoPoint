@@ -57,7 +57,7 @@ class DatasetFactory:
         img_files = list(imgs_folder.glob("*"))
         valid_samples = []
         for img_file in img_files:
-            if min(Image.open(img_file).size) < self.cfg.dataset.get("min_img_size", 360):
+            if min(Image.open(img_file).size) < self.cfg.dataset.get("min_img_size", 256):
                 continue
             points_file = points_folder / f"{img_file.stem}.json" if (points_folder / f"{img_file.stem}.json").exists() else None
             valid_samples.append(DataSample(img_file=img_file, points_file=points_file))

@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from random import choice, randint
+from random import choice, randint, random
 from typing import List, Optional, Union
 
 import cv2
@@ -25,13 +25,15 @@ NUM_MAX_STARS = 5
 
 def generate_perspective_sample(img_w: int, img_h: int) -> "SynthData":
     synth_data = SynthData(img_w, img_h)
-    if randint(0, 1) == 0:
+    if random() < 0.8:
         adding_shape = choice([Cube, Checkerboard, Stripe])
         synth_data.add_shapes(adding_shape, 1)
-
-    synth_data.add_shapes(Line, randint(NUM_MIN_LINES, NUM_MAX_LINES))
-    synth_data.add_shapes(Polygon, randint(NUM_MIN_POLYGONS, NUM_MAX_POLYGONS))
-    synth_data.add_shapes(Star, randint(NUM_MIN_STARS, NUM_MAX_STARS))
+    if random() < 0.5:
+        synth_data.add_shapes(Polygon, randint(NUM_MIN_POLYGONS, NUM_MAX_POLYGONS))
+    else:
+        synth_data.add_shapes(Star, randint(NUM_MIN_STARS, NUM_MAX_STARS))
+    if random() < 0.5:
+        synth_data.add_shapes(Line, randint(NUM_MIN_LINES, NUM_MAX_LINES))
     synth_data.add_noise()
     return synth_data
 

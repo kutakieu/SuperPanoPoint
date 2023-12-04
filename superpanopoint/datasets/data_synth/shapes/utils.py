@@ -42,7 +42,7 @@ def fillPoly_with_noise(img: np.ndarray, points: np.ndarray, color: int):
     rows, cols = np.where(tmp_img > 0)
     if len(rows) == 0:
         return img
-    base_noise_img = generate_background(w, h, nb_blobs=100, min_rad_ratio=0.01, min_kernel_size=50, max_kernel_size=51).astype(int)
+    base_noise_img = generate_background(w, h, nb_blobs=100).astype(int)
     mean_col = max(1, np.mean(base_noise_img[rows, cols]))
     base_noise_img = base_noise_img * (color / mean_col)
     base_noise_img = np.minimum(np.maximum(base_noise_img, 0), 255).astype(np.uint8)
@@ -51,7 +51,7 @@ def fillPoly_with_noise(img: np.ndarray, points: np.ndarray, color: int):
 
 
 def generate_background(img_w: int, img_h: int, nb_blobs=100, min_rad_ratio=0.01,
-                        max_rad_ratio=0.05, min_kernel_size=50, max_kernel_size=300):
+                        max_rad_ratio=0.05, min_kernel_size_ratio=0.1, max_kernel_size_ratio=0.2):
     """ Generate a customized background image
     Parameters:
       size: size of the image
@@ -75,7 +75,7 @@ def generate_background(img_w: int, img_h: int, nb_blobs=100, min_rad_ratio=0.01
                   np.random.randint(int(dim * min_rad_ratio),
                                     int(dim * max_rad_ratio)),
                   col, -1)
-    kernel_size = random_state.randint(min_kernel_size, max_kernel_size)
+    kernel_size = random_state.randint(int(dim*min_kernel_size_ratio), int(dim*max_kernel_size_ratio))
     cv2.blur(img, (kernel_size, kernel_size), img)
     return img
 

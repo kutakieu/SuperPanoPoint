@@ -1892,7 +1892,7 @@ name = "tqdm"
 version = "4.66.1"
 description = "Fast, Extensible Progress Meter"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "tqdm-4.66.1-py3-none-any.whl", hash = "sha256:d302b3c5b53d47bce91fea46679d9c3c6508cf6332229aa1e7d8653723793386"},
@@ -2115,4 +2115,4 @@ training = ["lightning"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "57c1567b373a161197ec41bee7d414c0cf626b707992b961e4669d89f363e1ed"
+content-hash = "e1cdde74805e8b250aeec1c873efde0b2d2644913b14bec35ecd9825af588cd5"
