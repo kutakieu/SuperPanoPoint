@@ -116,6 +116,7 @@ class Translation(TransformHomography):
             [0, 1, self.ty], 
             [0, 0, 1]
         ])
+        super().__init__(self.matrix, img_w, img_h)
 
     def __repr__(self) -> str:
         return f"tx: {self.tx}, ty: {self.ty}"
@@ -132,7 +133,8 @@ class Rotation(TransformHomography):
             cv2.getRotationMatrix2D((self.center_x, self.center_y), angle, 1),
             np.array([0, 0, 1])
         ])
-    
+        super().__init__(self.matrix, img_w, img_h)
+
     def __repr__(self) -> str:
         return f"angle: {self.angle}, center_x: {self.center_x}, center_y: {self.center_y}"
 
@@ -147,7 +149,8 @@ class Scale(TransformHomography):
             cv2.getRotationMatrix2D((self.center_x, self.center_y), 0, self.scale), 
             np.array([0, 0, 1])
         ])
-    
+        super().__init__(self.matrix, img_w, img_h)
+
     def __repr__(self) -> str:
         return f"scale: {self.scale}, center_x: {self.center_x}, center_y: {self.center_y}"
 
@@ -162,9 +165,11 @@ class Shear(TransformHomography):
             cv2.getAffineTransform(src_pts, dst_pts), 
             np.array([0, 0, 1])
         ])
+        super().__init__(self.matrix, img_w, img_h)
 
 class Perspective(TransformHomography):
     def __init__(self, img_w: int, img_h: int, src_pts: Optional[np.ndarray]=None, dst_pts: Optional[np.ndarray]=None) -> None:
         src_pts = np.array([[0, 0], [0, img_h], [img_w, img_h], [img_w, 0]], dtype=np.float32)
         dst_pts = np.array([[uniform(0, img_w/3), uniform(0, img_h/3)], [uniform(0, img_w/3), uniform(img_h/3*2, img_h-1)], [uniform(img_w/3*2, img_w-1), uniform(img_h/3*2, img_h-1)], [uniform(img_w/3*2, img_w-1), uniform(0, img_h/3)]], dtype=np.float32)
         self.matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
+        super().__init__(self.matrix, img_w, img_h)

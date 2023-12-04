@@ -14,8 +14,18 @@ from .homographies import Perspective, Rotation, Scale, TransformHomography
 
 class HomographicAdapter:
     def __init__(self, img_w: int, img_h: int, detector: MagicPointPredictor, num_homographies: int=100) -> None:
-        self.homographies: List[TransformHomography] = [self._generate_random_homography(img_w, img_h) for _ in range(num_homographies)]
+        self.homographies = self._make_basic_homographies(img_w, img_h)
+        self.homographies += [self._generate_random_homography(img_w, img_h) for _ in range(num_homographies-len(self.homographies))]
         self.detector = detector
+    
+    def _make_basic_homographies(self, img_w: int, img_h: int, n_cells:int = 3) -> List[TransformHomography]:
+        homographies = [
+            TransformHomography(np.eye(3), img_w, img_h)
+        ]
+        cell_w, cell_h = img_w//n_cells, img_h//n_cells
+        cx, cy = img_w//(n_cells*2), img_h//(n_cells*2)
+        homographies += [Scale(img_w, img_h, scale=2, center_x=cx+c*cell_w, center_y=cy+r*cell_h) for r in range(3) for c in range(3)]
+        return homographies
 
     def _generate_random_homography(self, img_w: int, img_h: int) -> TransformHomography:
         homography_mat = np.eye(3)
