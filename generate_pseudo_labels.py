@@ -7,13 +7,14 @@ import cv2
 import numpy as np
 from omegaconf import OmegaConf
 from PIL import Image
+from tqdm import tqdm
 
 from superpanopoint.datasets.data_synth.homographic_adapter import \
     HomographicAdapter
 from superpanopoint.models.predictor import MagicPointPredictor
 
 config_path = "config/config_magicpoint.yaml"
-model_path = 'model.pth'
+model_path = 'model_magicpoint.pth'
 
 cfg = OmegaConf.load(config_path)
 detector = MagicPointPredictor(cfg, model_path, device='cuda')
@@ -33,11 +34,11 @@ def main():
     dir_vis_out = dir_out.parent / 'with_points'
     dir_vis_out.mkdir(parents=True, exist_ok=True)
 
-    for img_path in dir_in.glob('*'):
+    for img_path in tqdm(list(dir_in.glob('*'))):
         img = np.array(Image.open(img_path))
         h, w = img.shape[:2]
-        homographic_adapter = HomographicAdapter(w, h, detector, num_homographyies=5)
-        points_json = homographic_adapter.generate_pseudo_labels(img)
+        homographic_adapter = HomographicAdapter(w, h, detector, num_homographies=100)
+        points_json = homographic_adapter.generate_pseudo_labels(img, asjson=True)
 
         vis_img = visualize_points(img, points_json['points'])
         Image.fromarray(vis_img).save(dir_vis_out / f'{img_path.stem}.png')
