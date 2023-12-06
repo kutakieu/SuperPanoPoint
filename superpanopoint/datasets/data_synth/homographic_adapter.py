@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 
 from superpanopoint import Settings
+from superpanopoint.datasets.pano.e2p import e2p_map, e2p_with_map
 from superpanopoint.models.predictor import MagicPointPredictor
 from superpanopoint.models.utils.postprocess import non_maximum_suppression
 
@@ -63,4 +64,37 @@ class HomographicAdapter:
             Settings().img_width_key: points_img.shape[1],
             Settings().img_height_key: points_img.shape[0],
             Settings().points_key: [{"x": col, "y": row} for row, col in zip(rows, cols)]
+        }
+
+
+class PanoramaTransformAdapter:
+    def __init__(self, detector: MagicPointPredictor, fov_deg: int=45, pano_hw=[1024, 2048], pers_hw=[256, 256]) -> None:
+        self.detector = detector
+        self.fov_deg = fov_deg
+        self.pano_hw = pano_hw
+        self.pers_hw = pers_hw
+        self.e2p_maps = self._calc_e2p_maps()
+
+    def _calc_e2p_maps(self):
+        e2p_maps = {}
+        for u_deg in np.linspace(-180, 180, 18, endpoint=False):
+            for v_deg in np.linspace(-45, 45, 5):
+                e2p_maps[(u_deg, v_deg)] = e2p_map(in_hw=self.pano_hw, fov_deg=self.fov_deg, u_deg=u_deg, v_deg=v_deg, out_hw=self.pers_hw)
+        return e2p_maps
+    
+    def generate_pseudo_labels(self, pano_img: np.ndarray):
+        pano_img = np.array(Image.fromarray(pano_img).resize(self.pano_hw[::-1]))
+
+        points_on_pano = []
+        for u_deg in np.linspace(-180, 180, 18, endpoint=False):
+            for v_deg in np.linspace(-45, 45, 5):
+                pers_img = e2p_with_map(pano_img, self.e2p_maps[(u_deg, v_deg)])
+                points = self.detector(pers_img, return_as_array=True)
+                for x, y in points:
+                    points_on_pano.append(np.array(self.e2p_maps[(u_deg, v_deg)][y, x]).round().astype(int))
+
+        return {
+            Settings().img_width_key: self.pano_hw[1],
+            Settings().img_height_key: self.pano_hw[0],
+            Settings().points_key: [{"x": x, "y": y} for x, y in points_on_pano]
         }
