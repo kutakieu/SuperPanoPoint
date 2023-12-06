@@ -1,7 +1,9 @@
 from typing import List, Literal, Tuple
 
+import cv2
 import numpy as np
-from scipy.ndimage import map_coordinates
+
+# from scipy.ndimage import map_coordinates
 
 InterpolationMode = Literal["bilinear", "nearest"]
 CubeFormat = Literal["horizon", "list", "dict", "dice"]
@@ -131,55 +133,75 @@ def coor2uv(coorxy: np.ndarray, h: int, w: int):
     return np.concatenate([u, v], axis=-1)
 
 
-def sample_equirec(e_img: np.ndarray, coor_xy: np.ndarray, order: int):
+def sample_equirec(e_img: np.ndarray, coor_xy: np.ndarray, interpolation: int):
     w = e_img.shape[1]
     coor_x, coor_y = np.split(coor_xy, 2, axis=-1)
     pad_u = np.roll(e_img[[0]], w // 2, 1)
     pad_d = np.roll(e_img[[-1]], w // 2, 1)
     e_img = np.concatenate([e_img, pad_d, pad_u], 0)
-    return map_coordinates(e_img, [coor_y, coor_x],
-                           order=order, mode='wrap')[..., 0]
+    return cv2.remap(e_img, 
+                     coor_x.astype(np.float32), 
+                     coor_y.astype(np.float32), 
+                     interpolation=interpolation, 
+                     borderMode=cv2.BORDER_WRAP)
 
 
-def sample_cubefaces(cube_faces: np.ndarray, tp, coor_y, coor_x, order: int):
-    cube_faces = cube_faces.copy()
-    cube_faces[1] = np.flip(cube_faces[1], 1)
-    cube_faces[2] = np.flip(cube_faces[2], 1)
-    cube_faces[4] = np.flip(cube_faces[4], 0)
+# def sample_cubefaces(cube_faces: np.ndarray, tp, coor_y, coor_x, order: int):
+#     cube_faces = cube_faces.copy()
+#     cube_faces[1] = np.flip(cube_faces[1], 1)
+#     cube_faces[2] = np.flip(cube_faces[2], 1)
+#     cube_faces[4] = np.flip(cube_faces[4], 0)
 
-    # Pad up down
-    pad_ud = np.zeros((6, 2, cube_faces.shape[2]))
-    pad_ud[0, 0] = cube_faces[5, 0, :]
-    pad_ud[0, 1] = cube_faces[4, -1, :]
-    pad_ud[1, 0] = cube_faces[5, :, -1]
-    pad_ud[1, 1] = cube_faces[4, ::-1, -1]
-    pad_ud[2, 0] = cube_faces[5, -1, ::-1]
-    pad_ud[2, 1] = cube_faces[4, 0, ::-1]
-    pad_ud[3, 0] = cube_faces[5, ::-1, 0]
-    pad_ud[3, 1] = cube_faces[4, :, 0]
-    pad_ud[4, 0] = cube_faces[0, 0, :]
-    pad_ud[4, 1] = cube_faces[2, 0, ::-1]
-    pad_ud[5, 0] = cube_faces[2, -1, ::-1]
-    pad_ud[5, 1] = cube_faces[0, -1, :]
-    cube_faces = np.concatenate([cube_faces, pad_ud], 1)
+#     # Pad up down
+#     pad_ud = np.zeros((6, 2, cube_faces.shape[2]))
+#     pad_ud[0, 0] = cube_faces[5, 0, :]
+#     pad_ud[0, 1] = cube_faces[4, -1, :]
+#     pad_ud[1, 0] = cube_faces[5, :, -1]
+#     pad_ud[1, 1] = cube_faces[4, ::-1, -1]
+#     pad_ud[2, 0] = cube_faces[5, -1, ::-1]
+#     pad_ud[2, 1] = cube_faces[4, 0, ::-1]
+#     pad_ud[3, 0] = cube_faces[5, ::-1, 0]
+#     pad_ud[3, 1] = cube_faces[4, :, 0]
+#     pad_ud[4, 0] = cube_faces[0, 0, :]
+#     pad_ud[4, 1] = cube_faces[2, 0, ::-1]
+#     pad_ud[5, 0] = cube_faces[2, -1, ::-1]
+#     pad_ud[5, 1] = cube_faces[0, -1, :]
+#     cube_faces = np.concatenate([cube_faces, pad_ud], 1)
 
-    # Pad left right
-    pad_lr = np.zeros((6, cube_faces.shape[1], 2))
-    pad_lr[0, :, 0] = cube_faces[1, :, 0]
-    pad_lr[0, :, 1] = cube_faces[3, :, -1]
-    pad_lr[1, :, 0] = cube_faces[2, :, 0]
-    pad_lr[1, :, 1] = cube_faces[0, :, -1]
-    pad_lr[2, :, 0] = cube_faces[3, :, 0]
-    pad_lr[2, :, 1] = cube_faces[1, :, -1]
-    pad_lr[3, :, 0] = cube_faces[0, :, 0]
-    pad_lr[3, :, 1] = cube_faces[2, :, -1]
-    pad_lr[4, 1:-1, 0] = cube_faces[1, 0, ::-1]
-    pad_lr[4, 1:-1, 1] = cube_faces[3, 0, :]
-    pad_lr[5, 1:-1, 0] = cube_faces[1, -2, :]
-    pad_lr[5, 1:-1, 1] = cube_faces[3, -2, ::-1]
-    cube_faces = np.concatenate([cube_faces, pad_lr], 2)
+#     # Pad left right
+#     pad_lr = np.zeros((6, cube_faces.shape[1], 2))
+#     pad_lr[0, :, 0] = cube_faces[1, :, 0]
+#     pad_lr[0, :, 1] = cube_faces[3, :, -1]
+#     pad_lr[1, :, 0] = cube_faces[2, :, 0]
+#     pad_lr[1, :, 1] = cube_faces[0, :, -1]
+#     pad_lr[2, :, 0] = cube_faces[3, :, 0]
+#     pad_lr[2, :, 1] = cube_faces[1, :, -1]
+#     pad_lr[3, :, 0] = cube_faces[0, :, 0]
+#     pad_lr[3, :, 1] = cube_faces[2, :, -1]
+#     pad_lr[4, 1:-1, 0] = cube_faces[1, 0, ::-1]
+#     pad_lr[4, 1:-1, 1] = cube_faces[3, 0, :]
+#     pad_lr[5, 1:-1, 0] = cube_faces[1, -2, :]
+#     pad_lr[5, 1:-1, 1] = cube_faces[3, -2, ::-1]
+#     cube_faces = np.concatenate([cube_faces, pad_lr], 2)
 
-    return map_coordinates(cube_faces, [tp, coor_y, coor_x], order=order, mode='wrap')
+#     equi_h, equi_w = coor_x.shape[:2]
+#     res = np.zeros((equi_h, equi_w, cube_faces.shape[3]))
+#     for i, cube_face in enumerate(cube_faces):
+#         res[tp==i, :] = cv2.remap(cube_face, 
+#                                     (coor_x).astype(np.float32), 
+#                                     coor_y.astype(np.float32), 
+#                                     interpolation=cv2.INTER_LINEAR, 
+#                                     borderMode=cv2.BORDER_WRAP
+#                                     )[tp==i]
+#     return res        
+
+#     return map_coordinates(cube_faces, [tp, coor_y, coor_x], order=order, mode='wrap')
+#     return cv2.remap(e_img, 
+#                      coor_x.astype(np.float32), 
+#                      coor_y.astype(np.float32), 
+#                      interpolation=interpolation, 
+#                      borderMode=cv2.BORDER_WRAP)
+
 
 
 def cube_h2list(cube_h: np.ndarray):
@@ -207,7 +229,7 @@ def cube_dict2h(cube_dict, face_k=['F', 'R', 'B', 'L', 'U', 'D']):
 def cube_h2dice(cube_h: np.ndarray):
     assert cube_h.shape[0] * 6 == cube_h.shape[1]
     w = cube_h.shape[0]
-    cube_dice = np.zeros((w * 3, w * 4, cube_h.shape[2]), dtype=cube_h.dtype)
+    cube_dice = np.zeros((w * 3, w * 4, cube_h.shape[2]), dtype=cube_h.dtype) if len(cube_h.shape) == 3 else np.zeros((w * 3, w * 4), dtype=cube_h.dtype)
     cube_list = cube_h2list(cube_h)
     # Order: F R B L U D
     sxy = [(1, 1), (2, 1), (3, 1), (0, 1), (1, 0), (1, 2)]
@@ -224,7 +246,7 @@ def cube_h2dice(cube_h: np.ndarray):
 def cube_dice2h(cube_dice: np.ndarray):
     w = cube_dice.shape[0] // 3
     assert cube_dice.shape[0] == w * 3 and cube_dice.shape[1] == w * 4
-    cube_h = np.zeros((w, w * 6, cube_dice.shape[2]), dtype=cube_dice.dtype)
+    cube_h = np.zeros((w, w * 6, cube_h.shape[2]), dtype=cube_dice.dtype) if len(cube_h.shape) == 3 else np.zeros((w, w * 6), dtype=cube_dice.dtype)
     # Order: F R B L U D
     sxy = [(1, 1), (2, 1), (3, 1), (0, 1), (1, 0), (1, 2)]
     for i, (sx, sy) in enumerate(sxy):
@@ -252,9 +274,9 @@ def rotation_matrix(rad: float, ax: List[int]):
 
 cube_format2horizontal_func = {
     'horizon': lambda x: x,
-    'list': cube_h2list,
-    'dict': cube_h2dict,
-    'dice': cube_h2dice,
+    'list': cube_list2h,
+    'dict': cube_dict2h,
+    'dice': cube_dice2h,
 }
 
 horizon_cube2cube_func = {
@@ -265,6 +287,6 @@ horizon_cube2cube_func = {
 }
 
 interpolation_mode2order = {
-    'bilinear': 1,
-    'nearest': 0,
+    'bilinear': cv2.INTER_LINEAR,
+    'nearest': cv2.INTER_NEAREST,
 }
