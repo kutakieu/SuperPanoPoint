@@ -27,10 +27,7 @@ def e2c(e_img: np.ndarray,
     uv = xyz2uv(xyz)
     coor_xy = uv2coor(uv, h, w)
 
-    cubemap = np.stack([
-        sample_equirec(e_img[..., i], coor_xy, order=interpolation_mode2order[mode])
-        for i in range(e_img.shape[2])
-    ], axis=-1)
+    cubemap = sample_equirec(e_img, coor_xy, interpolation=interpolation_mode2order[mode])
 
     cubemap = horizon_cube2cube_func[cube_format](cubemap)
     return cubemap
