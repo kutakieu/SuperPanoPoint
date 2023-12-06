@@ -26,6 +26,21 @@ def e2p(e_img: np.ndarray,
         e_img = e_img[..., np.newaxis]
     h, w = e_img.shape[:2]
 
+    coor_xy = e2p_map((h, w), fov_deg, u_deg, v_deg, out_hw, in_rot_deg)
+
+    pers_img = sample_equirec(e_img, coor_xy, interpolation=interpolation_mode2order[mode])
+
+    return pers_img
+
+def e2p_map(
+        in_hw: Tuple[int, int],
+        fov_deg: Union[Tuple[float, float], float], 
+        u_deg: float, 
+        v_deg: float, 
+        out_hw: Tuple[int, int], 
+        in_rot_deg: float=0
+        )->np.ndarray:
+    h, w = in_hw
     if isinstance(fov_deg, (int, float)):
         fov_deg = (fov_deg, fov_deg)
     h_fov, v_fov = fov_deg[0] * np.pi / 180, fov_deg[1] * np.pi / 180
@@ -35,8 +50,13 @@ def e2p(e_img: np.ndarray,
     v = v_deg * np.pi / 180
     xyz = xyzpers(h_fov, v_fov, u, v, out_hw, in_rot)
     uv = xyz2uv(xyz)
-    coor_xy = uv2coor(uv, h, w)
+    return uv2coor(uv, h, w)
 
-    pers_img = sample_equirec(e_img, coor_xy, interpolation=interpolation_mode2order[mode])
+def e2p_with_map(e_img: np.ndarray, e2p_map: np.ndarray, mode: InterpolationMode='bilinear'):
+    if mode not in interpolation_mode2order:
+        raise NotImplementedError('unknown interpolation mode')
 
-    return pers_img
+    if len(e_img.shape) == 2:
+        e_img = e_img[..., np.newaxis]
+
+    return sample_equirec(e_img, e2p_map, interpolation=interpolation_mode2order[mode])
