@@ -14,7 +14,7 @@ from .data_synth.homographies import (TransformHomography,
 
 
 class HomographicDataset(BaseDataset):
-    def __init__(self, data_samples: List[DataSample], point_detector: Optional[MagicPointPredictor], crop_size: int=360, flip: bool=True, **kwargs):
+    def __init__(self, data_samples: List[DataSample], point_detector: Optional[MagicPointPredictor], crop_size: int=256, flip: bool=True, **kwargs):
         super().__init__(**kwargs)
         self.data_samples = data_samples
         self.point_detector = point_detector
@@ -45,7 +45,7 @@ class HomographicDataset(BaseDataset):
             img, points = self._random_crop(img, points, self.crop_size)
         if self.flip:
             img, points = self._random_horizontal_flip(img, points)
-        h, w = img.shape
+        h, w = img.shape[:2]
         homography = generate_random_homography(w, h)
         warped_img, warped_points = self.make_homographic_sample(img, points, homography)
 

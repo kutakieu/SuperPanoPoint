@@ -43,11 +43,12 @@ class BasePredictor:
     def _postprocess(self, pred_pointness: torch.Tensor) -> np.ndarray:
         raise NotImplementedError
     
-    def _to_points_array(self, img: np.ndarray, orig_w, orig_h) -> np.ndarray:
+    def _to_points_array(self, img: np.ndarray, orig_w: int, orig_h: int) -> np.ndarray:
         h, w = img.shape[:2]
         coords = np.array(np.where(img > 0)).T.astype(float)
-        coords[:, 0] *= orig_h / h
-        coords[:, 1] *= orig_w / w
+        coords[:, [0, 1]] = coords[:, [1, 0]]
+        coords[:, 0] *= orig_w / w
+        coords[:, 1] *= orig_h / h
         return np.round(coords).astype(int)
 
 class SuperPointPredictor(BasePredictor):
@@ -56,14 +57,12 @@ class SuperPointPredictor(BasePredictor):
         img_tensor = self._preprocess(img).to(self.device)
         with torch.no_grad():
             pointness, desc = self.net(img_tensor)
-            pointness = postprocess_pointness(pointness)[0]
-            pred_desc = postprocess_descriptor(desc)
 
-        if return_as_array:
-            return self._to_points_array(pointness, w, h)
-        if h != pointness.shape[0] or w != pointness.shape[1]:
-            pointness = cv2.resize(pointness, (w, h), interpolation=cv2.INTER_NEAREST)
-        return pointness, pred_desc
+            pointness = postprocess_pointness(pointness)[0]
+            points = self._to_points_array(pointness, w, h)
+
+            pred_desc = postprocess_descriptor(desc, w, h)
+        return points, pred_desc[0, points[:, 1], points[:, 0], :]
 
 class MagicPointPredictor(BasePredictor):
     def __call__(self, img: Union[Image.Image, np.ndarray], return_as_array: bool=False) -> np.ndarray:
@@ -76,6 +75,7 @@ class MagicPointPredictor(BasePredictor):
 
         if return_as_array:
             return self._to_points_array(pointness, w, h)
+
         if h != pointness.shape[0] or w != pointness.shape[1]:
             pointness = cv2.resize(pointness, (w, h), interpolation=cv2.INTER_NEAREST)
         return pointness

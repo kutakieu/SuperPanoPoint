@@ -35,16 +35,20 @@ def main():
     dir_vis_out.mkdir(parents=True, exist_ok=True)
 
     for img_path in tqdm(list(dir_in.glob('*'))):
-        img = np.array(Image.open(img_path))
-        h, w = img.shape[:2]
-        homographic_adapter = HomographicAdapter(w, h, detector, num_homographies=100)
-        points_json = homographic_adapter.generate_pseudo_labels(img, asjson=True)
+        try:
+            img = np.array(Image.open(img_path))
+            h, w = img.shape[:2]
+            homographic_adapter = HomographicAdapter(w, h, detector, num_homographies=100)
+            points_json = homographic_adapter.generate_pseudo_labels(img, asjson=True)
 
-        vis_img = visualize_points(img, points_json['points'])
-        Image.fromarray(vis_img).save(dir_vis_out / f'{img_path.stem}.png')
+            vis_img = visualize_points(img, points_json['points'])
+            Image.fromarray(vis_img).save(dir_vis_out / f'{img_path.stem}.png')
 
-        with open(dir_out / f'{img_path.stem}.json', 'w') as f:
-            json.dump(points_json, f, indent=4)
+            with open(dir_out / f'{img_path.stem}.json', 'w') as f:
+                json.dump(points_json, f, indent=4)
+        except Exception as e:
+            print(e, img_path)
+            continue
 
 def visualize_points(img: np.ndarray, points: List[tuple[int, int]]):
     vis_img = img.copy()

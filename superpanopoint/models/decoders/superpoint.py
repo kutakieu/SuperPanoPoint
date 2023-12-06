@@ -39,8 +39,8 @@ def postprocess_pointness(pointness: torch.Tensor, apply_nms=True) -> np.ndarray
 
     return point_mask  # (bs, h, w)
 
-def postprocess_descriptor(desc: torch.Tensor) -> np.ndarray:
-    desc = F.interpolate(desc, scale_factor=8, mode="bicubic", align_corners=False)
+def postprocess_descriptor(desc: torch.Tensor, img_w: int, img_h: int) -> np.ndarray:
+    desc = F.interpolate(desc, size=(img_h, img_w), mode="bicubic", align_corners=False)
     return desc.permute(0, 2, 3, 1).detach().cpu().numpy()  # (bs, h, w, ch)
 
 
@@ -82,7 +82,7 @@ class PointDescriptor(nn.Module):
         
     def forward(self, x: torch.Tensor):
         desc = self.layers(x)
-        return desc.permute(0, 2, 3, 1)  # (bs, h, w, ch)
+        return desc  # (bs, ch, h, w)
     
 
 if __name__ == "__main__":
