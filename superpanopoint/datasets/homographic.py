@@ -22,7 +22,8 @@ class HomographicDataset(BaseDataset):
         self.flip = flip
         self.img_transform = Compose([
             ToTensor(),
-            Normalize(mean=[0.449], std=[0.226])
+            # Normalize(mean=[0.449], std=[0.226]),
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
     def __len__(self):
@@ -33,7 +34,7 @@ class HomographicDataset(BaseDataset):
 
     def __getitem__(self, index: int):
         sample = self.data_samples[index]
-        img = np.array(sample.load_img(as_gray=True))
+        img = np.array(sample.load_img(as_gray=False))
         if sample.points_file is None:
             if self.point_detector is None:
                 raise ValueError("point_detector must be provided if points_file is None")
