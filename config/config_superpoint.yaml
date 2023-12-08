@@ -1,0 +1,67 @@
+dataset:
+    type: "homographic"
+    sources:
+        synthetic:
+            folder_name: "PanoContext/perspective"
+            # folder_name: "homographic/panocontext"
+            train: 0.6
+            val: 0.2
+            test: 0.2
+    min_img_size: &min_img_size 256
+    detector_model: "model_magicpoint.pth"
+    detector_cfg: "config/config_magicpoint.yaml"
+    train:
+        mode: "train"
+        aug:
+            crop_size: *min_img_size
+            flip: True
+        loader_args:
+            batch_size: 10
+            num_workers: &num_workers 4
+            shuffle: True
+            drop_last: True
+            pin_memory: True
+    val:
+        mode: "test" ####### Important
+        aug:
+            crop_size: *min_img_size
+            flip: False
+        loader_args:
+            batch_size: 4
+            num_workers: *num_workers
+            shuffle: False
+            drop_last: False
+            pin_memory: True
+    test:
+        mode: "test" ####### Important
+        aug:
+            crop_size: *min_img_size
+            flip: False
+        loader_args:
+            batch_size: 4
+            num_workers: *num_workers
+            shuffle: False
+            drop_last: False
+            pin_memory: True
+model:
+    name: "superpoint"
+    encoder:
+        name: "vgg"
+        color_channels: 3
+    decoder: 
+        name: "superpoint"
+        description_dim: 256
+    save_path: "./save"
+training:
+    n_epochs: 50
+    desc_loss_weight: 0.0001
+    optimizer:
+        name: "adam"
+        learning_rate: 0.0003
+    accelerator:
+        device: "gpu"
+        gpus: 1
+    log_every_n_batch: 20
+    pointness_loss_weight: 256
+    early_stopping_patience: 50
+
