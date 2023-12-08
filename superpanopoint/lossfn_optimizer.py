@@ -30,10 +30,10 @@ def make_pointness_loss_fn(weight=1000.0):
         weight[-1] = 1
         return nn.CrossEntropyLoss(weight=weight)
 
-def descriptor_loss_fn(desc: Tensor, warped_desc: Tensor, correspondence_mask: Tensor, _lambda: float=50.0, pos_margin = 0.5, neg_margin = 0.5):
+def descriptor_loss_fn(desc: Tensor, warped_desc: Tensor, correspondence_mask: Tensor, _lambda: float=512.0, pos_margin = 1.0, neg_margin = 0.2):
     desc = rearrange(desc, "b c h w -> b (h w) c")
     warped_desc = rearrange(warped_desc, "b c h w -> b (h w) c")
     ele_wise_dot = torch.einsum("bnc,bmc->bnm", desc, warped_desc)
-    pos_corres_loss = _lambda * correspondence_mask * torch.maximum(torch.zeros_like(ele_wise_dot), pos_margin - ele_wise_dot)
+    pos_corres_loss = correspondence_mask * torch.maximum(torch.zeros_like(ele_wise_dot), pos_margin - ele_wise_dot)
     neg_corres_loss = (1 - correspondence_mask) * torch.maximum(torch.zeros_like(ele_wise_dot), ele_wise_dot - neg_margin)
-    return torch.mean(pos_corres_loss + neg_corres_loss)
+    return torch.mean(_lambda * pos_corres_loss + 0.1 * neg_corres_loss)
