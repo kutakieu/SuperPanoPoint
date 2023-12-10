@@ -4,7 +4,7 @@ import numpy as np
 from lightning import pytorch as pl
 from torch import Tensor
 
-from superpanopoint.lossfn_optimizer import (descriptor_loss_fn,
+from superpanopoint.lossfn_optimizer import (make_descriptor_loss_fn,
                                              make_pointness_loss_fn,
                                              optimizer_factory)
 from superpanopoint.models import model_factory
@@ -18,9 +18,13 @@ class LightningWrapper(pl.LightningModule):
         super().__init__()
         self.cfg = cfg
         self.net = model_factory(cfg)
-        self.lossfn_pointness = make_pointness_loss_fn(cfg.training.get("pointness_loss_weight", 1000.0))
-        self.lossfn_descriptor = descriptor_loss_fn
-        self.desc_loss_weight = cfg.training.get("desc_loss_weight", 250.0)
+        self.lossfn_pointness = make_pointness_loss_fn(cfg.training.loss.get("pointness_positive_weight", 1000.0))
+        self.lossfn_descriptor = make_descriptor_loss_fn(
+            cfg.training.loss.get("desc_positive_weight", 1024.0), 
+            cfg.training.loss.get("desc_positive_margin", 1.0), 
+            cfg.training.loss.get("desc_negative_margin", 0.2)
+            )
+        self.desc_loss_weight = cfg.training.loss.get("desc_weight", 0.0001)
         self.optimizer_name = cfg.training.optimizer.name
         self.learning_rate = cfg.training.optimizer.learning_rate
         self.training_step_outputs = []
@@ -30,8 +34,8 @@ class LightningWrapper(pl.LightningModule):
     def _clac_pointness_loss(self, pred: Tensor, gt: Tensor):
         return self.lossfn_pointness(pred, gt)
 
-    def _clac_description_loss(self, desc: Tensor, warped_desc: Tensor, correspondence_mask: Tensor):
-        return self.lossfn_descriptor(desc, warped_desc, correspondence_mask)
+    def _clac_description_loss(self, desc: Tensor, warped_desc: Tensor, correspondence_mask: Tensor, incorrespondence_mask: Tensor):
+        return self.lossfn_descriptor(desc, warped_desc, correspondence_mask, incorrespondence_mask)
 
     # override
     def configure_optimizers(self):
@@ -46,11 +50,11 @@ class LightningWrapper(pl.LightningModule):
             loss_total = self._clac_pointness_loss(pointness, points)
             self.log("loss_pointness_train_step", loss_total, sync_dist=True)
         elif self.cfg.model.name == "superpoint":
-            img, points, warped_img, warped_points, correspondence_mask = batch
+            img, points, warped_img, warped_points, correspondence_mask, incorrespondence_mask = batch
             pointness, desc = self.net(img)
             warped_pointness, warped_desc = self.net(warped_img)
             loss_warped_pointness = self._clac_pointness_loss(warped_pointness, warped_points)
-            loss_desc = self._clac_description_loss(desc, warped_desc, correspondence_mask)
+            loss_desc = self._clac_description_loss(desc, warped_desc, correspondence_mask, incorrespondence_mask)
             self.log("loss_desc_train_step", loss_desc, sync_dist=True)
             loss_pointness = self._clac_pointness_loss(pointness, points) + loss_warped_pointness
             self.log("loss_pointness_train_step", loss_pointness, sync_dist=True)
@@ -74,11 +78,11 @@ class LightningWrapper(pl.LightningModule):
             pointness = self.net(img)
             loss_total = self._clac_pointness_loss(pointness, points)
         else:
-            img, points, warped_img, warped_points, correspondence_mask = batch
+            img, points, warped_img, warped_points, correspondence_mask, incorrespondence_mask = batch
             pointness, desc = self.net(img)
             warped_pointness, warped_desc = self.net(warped_img)
             loss_warped_pointness = self._clac_pointness_loss(warped_pointness, warped_points)
-            loss_desc = self._clac_description_loss(desc, warped_desc, correspondence_mask)
+            loss_desc = self._clac_description_loss(desc, warped_desc, correspondence_mask, incorrespondence_mask)
             loss_pointness = self._clac_pointness_loss(pointness, points) + loss_warped_pointness
             loss_total = loss_pointness + self.desc_loss_weight * loss_desc
 
@@ -100,11 +104,11 @@ class LightningWrapper(pl.LightningModule):
             pointness = self.net(img)
             loss_desc = loss_warped_pointness = 0.0
         else:
-            img, points, warped_img, warped_points, correspondence_mask = batch
+            img, points, warped_img, warped_points, correspondence_mask, incorrespondence_mask = batch
             pointness, desc = self.net(img)
             warped_pointness, warped_desc = self.net(warped_img)
             loss_warped_pointness = self._clac_pointness_loss(warped_pointness, warped_points)
-            loss_desc = self._clac_description_loss(desc, warped_desc, correspondence_mask)
+            loss_desc = self._clac_description_loss(desc, warped_desc, correspondence_mask, incorrespondence_mask)
         loss_pointness = self._clac_pointness_loss(pointness, points) + loss_warped_pointness
 
         # metrics = self.calc_metrics()

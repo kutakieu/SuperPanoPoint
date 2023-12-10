@@ -4,8 +4,8 @@ dataset:
         synthetic:
             folder_name: "PanoContext/perspective"
             # folder_name: "homographic/panocontext"
-            train: 0.6
-            val: 0.2
+            train: 0.7
+            val: 0.1
             test: 0.2
     min_img_size: &min_img_size 256
     detector_model: "model_magicpoint.pth"
@@ -54,14 +54,18 @@ model:
     save_path: "./save"
 training:
     n_epochs: 50
-    desc_loss_weight: 0.0001
     optimizer:
         name: "adam"
-        learning_rate: 0.0003
+        learning_rate: 0.001
     accelerator:
         device: "gpu"
         gpus: 1
     log_every_n_batch: 20
-    pointness_loss_weight: 256
+    loss:    
+        desc_weight: 0.0001
+        desc_positive_weight: 1024.0
+        desc_positive_margin: 1.0
+        desc_negative_margin: 0.2
+        pointness_positive_weight: 512
     early_stopping_patience: 50
 
