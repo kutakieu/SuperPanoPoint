@@ -57,8 +57,11 @@ class HomographicDataset(BaseDataset):
         points = torch.Tensor(points).permute(2, 0, 1) # (h, w, c) => (c h w)
 
         correspondence_mask = homography.get_correspondence_mask()
+        incorrespondence_mask = homography.make_mask()[::8, ::8].reshape(1, -1).astype(float)
+        incorrespondence_mask = np.repeat(incorrespondence_mask, incorrespondence_mask.shape[1], axis=0)
+        incorrespondence_mask -= correspondence_mask
 
-        return img, self.rearrange_points_img(points), warped_img, self.rearrange_points_img(warped_points), torch.Tensor(correspondence_mask)
+        return img, self.rearrange_points_img(points), warped_img, self.rearrange_points_img(warped_points), torch.Tensor(correspondence_mask), torch.Tensor(incorrespondence_mask)
     
     def _random_crop(self, img: np.ndarray, points: np.ndarray, crop_size: int):
         h, w = img.shape[:2]

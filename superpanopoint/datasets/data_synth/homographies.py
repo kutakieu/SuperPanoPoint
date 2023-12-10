@@ -52,7 +52,7 @@ class TransformHomography:
         return apply_homography(img, self.inverse_matrix)
     
     def make_mask(self, inverse=False) -> np.ndarray:
-        xs, ys = np.meshgrid(np.arange(512), np.arange(512))
+        xs, ys = np.meshgrid(np.arange(self.img_w), np.arange(self.img_h))
         homogeneous_coords = np.concatenate([xs[:,:,np.newaxis], ys[:,:,np.newaxis], np.ones((self.img_w, self.img_h, 1))], axis=2)
         mat = self.inverse_matrix if inverse else self.matrix
         converted_coords = (mat @ homogeneous_coords.reshape(-1, 3).T).T
@@ -103,7 +103,7 @@ class TransformHomography:
             rearrange(transformed_indices[::scale, ::scale], "w h d -> (w h) 1 d"),
             rearrange(original_indices[::scale, ::scale], "w h d -> 1 (w h) d")
             )
-        return ((np.sum(diff**2, axis=2) ** 0.5) <= (scale//2)).astype(float)
+        return ((np.sum(diff**2, axis=2) ** 0.5) <= (scale)).astype(float)
     
 class Translation(TransformHomography):
     tx: float
