@@ -44,3 +44,27 @@ def make_descriptor_loss_fn(_lambda: float=1024.0, pos_margin = 1.0, neg_margin 
         neg_corres_loss = incorrespondence_mask * torch.maximum(torch.zeros_like(ele_wise_dot), ele_wise_dot - neg_margin)
         return torch.mean(_lambda * pos_corres_loss + neg_corres_loss)
     return descriptor_loss_fn
+
+def make_contrastive_descriptor_loss_fn():
+    lossfn = nn.CrossEntropyLoss()
+    def contrastive_descriptor_loss_fn(desc: Tensor, warped_desc: Tensor, points_idxs: np.ndarray, contrastive_pair_idxs: np.ndarray):
+        b, c, h, w = desc.shape
+        desc = rearrange(desc, "b c h w -> (b h w) c")
+        warped_desc = rearrange(warped_desc, "b c h w -> (b h w) c")
+
+        b, np, nc = contrastive_pair_idxs.shape  # np: number of points, nc: number of contrastive pairs
+        for i in range(b):
+            points_idxs[i] = points_idxs[i] + i * h * w
+        points_idxs = rearrange(points_idxs, "b np -> (b np)")
+        desc = rearrange(desc[points_idxs], "(b np) c -> b np c", b=b, np=np)
+
+        contrastive_pair_idxs = rearrange(contrastive_pair_idxs, "b np nc -> b (np nc)")
+        for i in range(b):
+            contrastive_pair_idxs[i] = contrastive_pair_idxs[i] + i * h * w
+        contrastive_pair_idxs = rearrange(contrastive_pair_idxs, "b (np nc) -> (b np nc)", b=b, np=np, nc=nc)
+        warped_desc = rearrange(warped_desc[contrastive_pair_idxs], "(b np nc) c -> b np nc c", b=b, np=np, nc=nc)
+
+        ele_wise_dot = torch.einsum("bnc,bnmc->bmn", desc, warped_desc)  # (b, nc, np)
+        target = torch.zeros(b, np, dtype=torch.int64, device=desc.device)
+        return lossfn(ele_wise_dot, target)
+    return contrastive_descriptor_loss_fn
