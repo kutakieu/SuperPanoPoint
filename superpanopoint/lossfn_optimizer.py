@@ -1,21 +1,26 @@
 from typing import Literal
 
+import numpy as np
 import torch
 import torch.optim as optim
 from einops import rearrange
 from torch import Tensor, nn
 
-LossFunctionType = Literal["cross_entropy", "binary_cross_entropy"]
+LossFunctionType = Literal["homographic", "contrastive"]
 OptimizerType = Literal["sgd", "adam"]
 
 
-def loss_function_factory(loss_function_name: LossFunctionType):
-    if loss_function_name == "cross_entropy":
-        weight = torch.full([65], 4096.0, dtype=torch.float32)
-        weight[-1] = 1
-        return nn.CrossEntropyLoss(weight=weight)
-    elif loss_function_name == "binary_cross_entropy":
-        return nn.BCELoss()
+def loss_function_factory(cfg):
+    if cfg.dataset.type == "homographic":
+        return make_pointness_loss_fn(cfg.training.loss.get("pointness_positive_weight", 1000.0)), \
+                make_descriptor_loss_fn(
+                    cfg.training.loss.get("desc_positive_weight", 1024.0), 
+                    cfg.training.loss.get("desc_positive_margin", 1.0), 
+                    cfg.training.loss.get("desc_negative_margin", 0.2)
+                )
+    elif cfg.dataset.type == "contrastive":
+        return nn.CrossEntropyLoss(weight=torch.Tensor([1, cfg.training.loss.get("pointness_positive_weight", 1.0)])), \
+                make_contrastive_descriptor_loss_fn()
     raise NotImplementedError
 
 def optimizer_factory(optimizer_name: OptimizerType, learning_rate: float, net):
@@ -25,8 +30,8 @@ def optimizer_factory(optimizer_name: OptimizerType, learning_rate: float, net):
         return optim.Adam(net.parameters(), lr=learning_rate)
     raise NotImplementedError
 
-def make_pointness_loss_fn(weight=1000.0):
-        weight = torch.full([65], weight, dtype=torch.float32)
+def make_pointness_loss_fn(size=65, weight=1000.0):
+        weight = torch.full([size], weight, dtype=torch.float32)
         weight[-1] = 1
         return nn.CrossEntropyLoss(weight=weight)
 
