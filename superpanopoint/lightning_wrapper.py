@@ -59,6 +59,15 @@ class LightningWrapper(pl.LightningModule):
             loss_pointness = self._clac_pointness_loss(pointness, points) + loss_warped_pointness
             self.log("loss_pointness_train_step", loss_pointness, sync_dist=True)
             loss_total = loss_pointness + self.desc_loss_weight * loss_desc
+        elif self.cfg.model.name == "unet":
+            img, warped_img, gt_pointness, gt_warped_pointness, points_idxs, contrastive_points_idxs = batch
+            pointness, desc = self.net(img)
+            warped_pointness, warped_desc = self.net(warped_img)
+            loss_pointness = self._clac_pointness_loss(pointness, gt_pointness) + self._clac_pointness_loss(warped_pointness, gt_warped_pointness)
+            self.log("loss_pointness_train_step", loss_pointness, sync_dist=True)
+            loss_desc = self._calc_contrastive_description_loss(desc, warped_desc, points_idxs, contrastive_points_idxs)
+            self.log("loss_desc_train_step", loss_desc, sync_dist=True)
+            loss_total = loss_pointness + self.desc_loss_weight * loss_desc
         else:
             raise NotImplementedError
         
@@ -77,7 +86,7 @@ class LightningWrapper(pl.LightningModule):
             img, points = batch
             pointness = self.net(img)
             loss_total = self._clac_pointness_loss(pointness, points)
-        else:
+        elif self.cfg.model.name == "superpoint":
             img, points, warped_img, warped_points, correspondence_mask, incorrespondence_mask = batch
             pointness, desc = self.net(img)
             warped_pointness, warped_desc = self.net(warped_img)
@@ -85,6 +94,15 @@ class LightningWrapper(pl.LightningModule):
             loss_desc = self._clac_description_loss(desc, warped_desc, correspondence_mask, incorrespondence_mask)
             loss_pointness = self._clac_pointness_loss(pointness, points) + loss_warped_pointness
             loss_total = loss_pointness + self.desc_loss_weight * loss_desc
+        elif self.cfg.model.name == "unet":
+            img, warped_img, gt_pointness, gt_warped_pointness, points_idxs, contrastive_points_idxs = batch
+            pointness, desc = self.net(img)
+            warped_pointness, warped_desc = self.net(warped_img)
+            loss_pointness = self._clac_pointness_loss(pointness, gt_pointness) + self._clac_pointness_loss(warped_pointness, gt_warped_pointness)
+            loss_desc = self._calc_contrastive_description_loss(desc, warped_desc, points_idxs, contrastive_points_idxs)
+            loss_total = loss_pointness + self.desc_loss_weight * loss_desc
+        else:
+            raise NotImplementedError
 
         # metrics = self.calc_metrics()
         self.validation_step_outputs.append({"loss": loss_total.detach().cpu().numpy(), "metrics": 0})
@@ -103,13 +121,22 @@ class LightningWrapper(pl.LightningModule):
             img, points = batch
             pointness = self.net(img)
             loss_desc = loss_warped_pointness = 0.0
-        else:
+            loss_pointness = self._clac_pointness_loss(pointness, points) + loss_warped_pointness
+        elif self.cfg.model.name == "superpoint":
             img, points, warped_img, warped_points, correspondence_mask, incorrespondence_mask = batch
             pointness, desc = self.net(img)
             warped_pointness, warped_desc = self.net(warped_img)
             loss_warped_pointness = self._clac_pointness_loss(warped_pointness, warped_points)
             loss_desc = self._clac_description_loss(desc, warped_desc, correspondence_mask, incorrespondence_mask)
-        loss_pointness = self._clac_pointness_loss(pointness, points) + loss_warped_pointness
+            loss_pointness = self._clac_pointness_loss(pointness, points) + loss_warped_pointness
+        elif self.cfg.model.name == "unet":
+            img, warped_img, gt_pointness, gt_warped_pointness, points_idxs, contrastive_points_idxs = batch
+            pointness, desc = self.net(img)
+            warped_pointness, warped_desc = self.net(warped_img)
+            loss_pointness = self._clac_pointness_loss(pointness, gt_pointness) + self._clac_pointness_loss(warped_pointness, gt_warped_pointness)
+            loss_desc = self._calc_contrastive_description_loss(desc, warped_desc, points_idxs, contrastive_points_idxs)
+        else:
+            raise NotImplementedError
 
         # metrics = self.calc_metrics()
         loss_total = loss_pointness + self.desc_loss_weight * loss_desc
