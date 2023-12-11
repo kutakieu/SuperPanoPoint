@@ -6,12 +6,15 @@ from torch import nn
 from .decoders.superpoint import (PointDescriptor, PointDetector,
                                   SuperPointDecoder)
 from .encoders.vgg import VGG
+from .unet import UnetPoint
 
 
 def model_factory(cfg):
     if cfg.model.name in ["magicpoint", "superpoint"]:
         encoder = _encoder_factory(cfg.model.encoder)
         decoder = _decoder_factory(cfg.model.decoder)
+    elif cfg.model.name == "unet":
+        return UnetPoint()
     else:
         raise NotImplementedError
     return nn.Sequential(encoder, decoder)
@@ -21,7 +24,6 @@ def _encoder_factory(encoder_cfg: DictConfig):
         return VGG(num_color_chs=encoder_cfg.get("color_channels", 3))
     else:
         raise NotImplementedError
-
     
 def _decoder_factory(decoder_cfg: DictConfig):
     if decoder_cfg.name == "superpoint":
