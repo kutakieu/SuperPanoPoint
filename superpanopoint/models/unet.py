@@ -2,6 +2,20 @@ import torch
 from torch import nn
 
 
+class UnetPoint(nn.Module):
+    def __init__(self, in_channel: int=3) -> None:
+        super().__init__()
+        self.unet = Unet(in_channel)
+        self.detector = Detector()
+        self.descriptor = Descriptor()
+
+    def forward(self, x: torch.Tensor):
+        feature = self.unet(x)
+        pointness = self.detector(feature)
+        desc = self.descriptor(feature)
+        return pointness, desc
+
+
 class Unet(nn.Module):
     def __init__(self, in_channel: int=3) -> None:
         super().__init__()
@@ -31,7 +45,6 @@ class Unet(nn.Module):
         x = self.up_layers1(x5, x4)  # (bs, 512, h/8, w/8)
         x = self.up_layers2(x, x3)  # (bs, 256, h/4, w/4)
         x = self.up_layers3(x, x2)  # (bs, 128, h/2, w/2)
-        print(x.shape, x1.shape)
         x = self.up_layers4(x, x1)  # (bs, 64, h, w)
         return x
 
@@ -74,14 +87,14 @@ class UnetUpLayer(nn.Module):
 
 
 class Detector(nn.Module):
-    def __init__(self, in_channels: int=128, out_channels: int=1) -> None:
+    def __init__(self, in_channels: int=128, out_channels: int=2) -> None:
         super().__init__()
         self.layers: nn.Sequential = nn.Sequential(
             nn.Conv2d(in_channels, in_channels//2, kernel_size=3, padding=1),
             nn.BatchNorm2d(in_channels//2), 
             nn.ReLU(inplace=True),
             nn.Conv2d(in_channels//2, out_channels, kernel_size=3, padding=1),
-            nn.Sigmoid(),
+            nn.Softmax(dim=1),
         )
 
     def forward(self, x: torch.Tensor):
