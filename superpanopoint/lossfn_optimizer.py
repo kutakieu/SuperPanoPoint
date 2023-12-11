@@ -1,21 +1,26 @@
 from typing import Literal
 
+import numpy as np
 import torch
 import torch.optim as optim
 from einops import rearrange
 from torch import Tensor, nn
 
-LossFunctionType = Literal["cross_entropy", "binary_cross_entropy"]
+LossFunctionType = Literal["homographic", "contrastive"]
 OptimizerType = Literal["sgd", "adam"]
 
 
-def loss_function_factory(loss_function_name: LossFunctionType):
-    if loss_function_name == "cross_entropy":
-        weight = torch.full([65], 4096.0, dtype=torch.float32)
-        weight[-1] = 1
-        return nn.CrossEntropyLoss(weight=weight)
-    elif loss_function_name == "binary_cross_entropy":
-        return nn.BCELoss()
+def loss_function_factory(cfg):
+    if cfg.dataset.type == "homographic":
+        return make_pointness_loss_fn(cfg.training.loss.get("pointness_positive_weight", 1000.0)), \
+                make_descriptor_loss_fn(
+                    cfg.training.loss.get("desc_positive_weight", 1024.0), 
+                    cfg.training.loss.get("desc_positive_margin", 1.0), 
+                    cfg.training.loss.get("desc_negative_margin", 0.2)
+                )
+    elif cfg.dataset.type == "contrastive":
+        return nn.CrossEntropyLoss(weight=torch.Tensor([1, cfg.training.loss.get("pointness_positive_weight", 1.0)])), \
+                make_contrastive_descriptor_loss_fn()
     raise NotImplementedError
 
 def optimizer_factory(optimizer_name: OptimizerType, learning_rate: float, net):
@@ -25,8 +30,8 @@ def optimizer_factory(optimizer_name: OptimizerType, learning_rate: float, net):
         return optim.Adam(net.parameters(), lr=learning_rate)
     raise NotImplementedError
 
-def make_pointness_loss_fn(weight=1000.0):
-        weight = torch.full([65], weight, dtype=torch.float32)
+def make_pointness_loss_fn(size=65, weight=1000.0):
+        weight = torch.full([size], weight, dtype=torch.float32)
         weight[-1] = 1
         return nn.CrossEntropyLoss(weight=weight)
 
@@ -39,3 +44,27 @@ def make_descriptor_loss_fn(_lambda: float=1024.0, pos_margin = 1.0, neg_margin 
         neg_corres_loss = incorrespondence_mask * torch.maximum(torch.zeros_like(ele_wise_dot), ele_wise_dot - neg_margin)
         return torch.mean(_lambda * pos_corres_loss + neg_corres_loss)
     return descriptor_loss_fn
+
+def make_contrastive_descriptor_loss_fn():
+    lossfn = nn.CrossEntropyLoss()
+    def contrastive_descriptor_loss_fn(desc: Tensor, warped_desc: Tensor, points_idxs: np.ndarray, contrastive_pair_idxs: np.ndarray):
+        b, c, h, w = desc.shape
+        desc = rearrange(desc, "b c h w -> (b h w) c")
+        warped_desc = rearrange(warped_desc, "b c h w -> (b h w) c")
+
+        b, np, nc = contrastive_pair_idxs.shape  # np: number of points, nc: number of contrastive pairs
+        for i in range(b):
+            points_idxs[i] = points_idxs[i] + i * h * w
+        points_idxs = rearrange(points_idxs, "b np -> (b np)")
+        desc = rearrange(desc[points_idxs], "(b np) c -> b np c", b=b, np=np)
+
+        contrastive_pair_idxs = rearrange(contrastive_pair_idxs, "b np nc -> b (np nc)")
+        for i in range(b):
+            contrastive_pair_idxs[i] = contrastive_pair_idxs[i] + i * h * w
+        contrastive_pair_idxs = rearrange(contrastive_pair_idxs, "b (np nc) -> (b np nc)", b=b, np=np, nc=nc)
+        warped_desc = rearrange(warped_desc[contrastive_pair_idxs], "(b np nc) c -> b np nc c", b=b, np=np, nc=nc)
+
+        ele_wise_dot = torch.einsum("bnc,bnmc->bmn", desc, warped_desc)  # (b, nc, np)
+        target = torch.zeros(b, np, dtype=torch.int64, device=desc.device)
+        return lossfn(ele_wise_dot, target)
+    return contrastive_descriptor_loss_fn

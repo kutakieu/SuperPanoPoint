@@ -1,3 +1,4 @@
+import json
 from typing import List, Literal
 
 from PIL import Image
@@ -6,8 +7,9 @@ from torch.utils.data import random_split
 from superpanopoint import Settings
 from superpanopoint.datasets import BaseDataset, DataSample
 from superpanopoint.datasets.homographic import HomographicDataset
+from superpanopoint.datasets.homographic_contrastive import \
+    HomographicContrastiveDataset
 from superpanopoint.datasets.synthetic import SyntheticDataset
-from superpanopoint.models.predictor import MagicPointPredictor
 from superpanopoint.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -30,9 +32,9 @@ class DatasetFactory:
         if self.cfg.dataset.type == "synthetic":
             return SyntheticDataset(dataset_subset, **self.cfg["dataset"][mode], **self.cfg["dataset"][mode]["aug"])
         elif self.cfg.dataset.type == "homographic":
-            detector = None
-            # detector = MagicPointPredictor(self.cfg, self.cfg.dataset.detector_model, device='cpu')
-            return HomographicDataset(dataset_subset, point_detector=detector, **self.cfg["dataset"][mode], **self.cfg["dataset"][mode]["aug"])
+            return HomographicDataset(dataset_subset, point_detector=None, **self.cfg["dataset"][mode], **self.cfg["dataset"][mode]["aug"])
+        elif self.cfg.dataset.type == "contrastive":
+            return HomographicContrastiveDataset(dataset_subset, **self.cfg["dataset"][mode], **self.cfg["dataset"][mode]["aug"])
 
     def _split_data_sources(self, cfg_data_sources):
         train_subset = val_subset = test_subset = None
@@ -60,6 +62,10 @@ class DatasetFactory:
             if min(Image.open(img_file).size) < self.cfg.dataset.get("min_img_size", 256):
                 continue
             points_file = points_folder / f"{img_file.stem}.json" if (points_folder / f"{img_file.stem}.json").exists() else None
+            with open(points_file) as f:
+                j = json.load(f)
+                if len(j["points"]) <  100:
+                    continue
             valid_samples.append(DataSample(img_file=img_file, points_file=points_file))
         print('num samples:', len(valid_samples))
         return valid_samples
