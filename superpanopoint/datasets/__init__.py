@@ -9,6 +9,13 @@ from torch.utils.data import DataLoader, Dataset
 
 from superpanopoint import Settings
 
+xs = np.linspace(-1, 1, 9)
+ys = np.linspace(-1, 1, 9)
+xs, ys = np.meshgrid(xs, ys)
+sigma_pow2 = 0.4 ** 2
+gaussian_kernel = np.exp(-(xs**2 + ys**2)/(2*sigma_pow2)) / (2 * np.pi * sigma_pow2)
+gaussian_kernel /= np.max(gaussian_kernel)
+kh, kw = gaussian_kernel.shape
 
 @dataclass
 class DataSample:
@@ -25,7 +32,7 @@ class DataSample:
         self.img_width, self.img_height = img.size
         return img
     
-    def load_points(self)->Optional[np.ndarray]:
+    def load_points(self, as_probmap: bool=False)->Optional[np.ndarray]:
         """
         Returns:
             Optional[np.ndarray]: binary points image as a numpy array shape: (h, w, 1)
@@ -39,7 +46,11 @@ class DataSample:
             d = json.load(f)
         point_img = np.zeros((self.img_height, self.img_width, 1), dtype=float)
         for point in d[Settings().points_key]:
-            point_img[point["y"], point["x"], :] = 1
+            if as_probmap and 0<=point["y"]-kh and point["y"]+kh<self.img_height and 0<=point["x"]-kw and point["x"]+kw<self.img_width:
+                point_img[point["y"]-kh//2:point["y"]+kh//2+1, point["x"]-kw//2:point["x"]+kw//2+1, 0] = gaussian_kernel
+            else:
+                point_img[point["y"], point["x"], :] = 1
+
         return point_img
     
 

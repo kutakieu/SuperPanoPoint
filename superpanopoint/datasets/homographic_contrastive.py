@@ -4,6 +4,7 @@ from typing import List
 import cv2
 import numpy as np
 from PIL import Image
+from torch import Tensor
 from torchvision.transforms.v2 import ColorJitter, Compose, Normalize, ToTensor
 
 from . import BaseDataset, DataSample
@@ -33,7 +34,7 @@ class HomographicContrastiveDataset(BaseDataset):
     def __getitem__(self, index: int):
         sample = self.data_samples[index]
         img = np.array(sample.load_img(as_gray=False))
-        pointness = sample.load_points()[:,:,0]
+        pointness = sample.load_points(as_probmap=True)
         if self.crop_size is not None:
             img = cv2.resize(img, (self.crop_size, self.crop_size), interpolation=cv2.INTER_CUBIC)
             pointness = cv2.resize(pointness, (self.crop_size, self.crop_size), interpolation=cv2.INTER_NEAREST)
@@ -62,11 +63,11 @@ class HomographicContrastiveDataset(BaseDataset):
                 break
         if len(target_points_idxs) < 40:
             return self.__getitem__(np.random.randint(0, len(self)))
-        
+                
         return self.img_transform(Image.fromarray(img)), \
             self.img_transform(Image.fromarray(warped_img)), \
-            pointness.astype(int), \
-            warped_pointness.astype(int), \
+            Tensor(pointness.astype(float)).unsqueeze(0), \
+            Tensor(warped_pointness.astype(float)).unsqueeze(0), \
             np.array(target_points_idxs), \
             np.array(contrastive_points_idxs)
     

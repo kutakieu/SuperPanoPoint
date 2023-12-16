@@ -2,6 +2,7 @@ from typing import Literal
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 import torch.optim as optim
 from einops import rearrange
 from torch import Tensor, nn
@@ -19,7 +20,8 @@ def loss_function_factory(cfg):
                     cfg.training.loss.get("desc_negative_margin", 0.2)
                 )
     elif cfg.dataset.type == "contrastive":
-        return nn.CrossEntropyLoss(weight=torch.Tensor([1, cfg.training.loss.get("pointness_positive_weight", 1.0)])), \
+        # return nn.CrossEntropyLoss(weight=torch.Tensor([1, cfg.training.loss.get("pointness_positive_weight", 1.0)])), \
+        return make_pointness_map_loss_fn(), \
                 make_contrastive_descriptor_loss_fn()
     raise NotImplementedError
 
@@ -34,6 +36,12 @@ def make_pointness_loss_fn(size=65, weight=1000.0):
         weight = torch.full([size], weight, dtype=torch.float32)
         weight[-1] = 1
         return nn.CrossEntropyLoss(weight=weight)
+
+def make_pointness_map_loss_fn():
+    lossfn = F.binary_cross_entropy_with_logits
+    def pointness_map_loss_fn(pointness: Tensor, target_pointness: Tensor):
+        return lossfn(pointness, target_pointness)
+    return pointness_map_loss_fn
 
 def make_descriptor_loss_fn(_lambda: float=1024.0, pos_margin = 1.0, neg_margin = 0.2):
     def descriptor_loss_fn(desc: Tensor, warped_desc: Tensor, correspondence_mask: Tensor, incorrespondence_mask: Tensor):
@@ -68,3 +76,23 @@ def make_contrastive_descriptor_loss_fn():
         target = torch.zeros(b, np, dtype=torch.int64, device=desc.device)
         return lossfn(ele_wise_dot, target)
     return contrastive_descriptor_loss_fn
+
+def make_probmap_descriptor_loss_fn():
+    lossfn = F.binary_cross_entropy_with_logits
+    softmax = nn.Softmax()
+    def probmap_descriptor_loss_fn(desc: Tensor, warped_desc: Tensor, similarity_maps):
+        loss = 0
+        bs = desc.shape[0]
+        for i in range(bs):
+            cur_desc = desc[i]
+            cur_warped_desc = warped_desc[i]
+            cur_loss = 0
+            for sim_map in similarity_maps:
+                (x, y) = sim_map["point"]
+                target_probmap = sim_map["similarity_map"]
+                desc_vec = cur_desc[:, y, x]
+                prob_map = softmax(torch.einsum("c,mnc->mn", desc_vec, cur_warped_desc))
+                cur_loss += lossfn(prob_map, target_probmap)
+            loss += cur_loss / len(similarity_maps)
+        return loss / bs
+    return probmap_descriptor_loss_fn
