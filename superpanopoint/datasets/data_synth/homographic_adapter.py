@@ -7,8 +7,8 @@ from PIL import Image
 
 from superpanopoint import Settings
 from superpanopoint.datasets.pano.e2p import e2p_map, e2p_with_map
-from superpanopoint.models.predictor import MagicPointPredictor
-from superpanopoint.models.utils.postprocess import non_maximum_suppression
+from superpanopoint.predictors import MagicPointPredictor
+from superpanopoint.predictors.postprocess import non_maximum_suppression
 
 from .homographies import Perspective, Rotation, Scale, TransformHomography
 

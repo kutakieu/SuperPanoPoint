@@ -13,8 +13,8 @@ def non_maximum_suppression(pointness: np.ndarray, radius: int=4, strict=True) -
     """
     non_zero_ys, non_zero_xs = np.nonzero(pointness)
     for x, y in zip(non_zero_xs, non_zero_ys):
-        if pointness[y, x] == 0:
-            continue
+        if pointness[y, x] < 0.5:
+            pointness[y, x] = 0
         else:
             orig_pointness = pointness[y, x]
             area_xs = np.arange(max(0, x - radius), min(pointness.shape[1], x + radius + 1))
