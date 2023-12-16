@@ -1,47 +1,5 @@
-import numpy as np
 import torch
-import torch.nn.functional as F
-from einops import rearrange
 from torch import nn
-
-from superpanopoint.models.utils.postprocess import non_maximum_suppression
-
-
-def postprocess_pointness(pointness: torch.Tensor, apply_nms=True) -> np.ndarray:
-    """
-    rearrange pointness tensor to numpy array
-
-    Args:
-        - pointness shape: (bs, 65, h_c, w_c).  
-            - 65 is 64 + 1 (background)
-            - h_c and w_c are height and width of the output of the network
-            h_c = h / 8, w_c = w / 8 according to the paper
-
-    Returns:
-        - pointness shape: (bs, h, w)
-            - h and w are height and width of the original input image
-    """
-    pointness = pointness.detach().cpu()
-    max_idx = torch.argmax(pointness, dim=1, keepdim=True)
-    point_mask = torch.FloatTensor(pointness.shape)
-    point_mask.zero_().scatter_(1, max_idx, 1)
-    point_mask = point_mask[:, :-1, :, :].detach().cpu().numpy()  # (bs, 64, h_c, w_c)
-    point_mask = rearrange(point_mask, "b (ch1 ch2) h w -> b h w ch1 ch2", ch1=8, ch2=8)  # (bs, h_c, w_c, 8, 8)
-    point_mask = rearrange(point_mask, "b h w c1 c2 -> b (h c1) (w c2)")  # (bs, h_c*8, w_c*8)
-
-    if apply_nms:
-        pointness = pointness[:, :-1, :, :].detach().cpu().numpy()  # (bs, 64, h_c, w_c)
-        pointness = rearrange(pointness, "b (ch1 ch2) h w -> b h w ch1 ch2", ch1=8, ch2=8)  # (bs, h_c, w_c, 8, 8)
-        pointness = rearrange(pointness, "b h w c1 c2 -> b (h c1) (w c2)")  # (bs, h_c*8, w_c*8)
-        pointness = pointness * point_mask  # (bs, h, w)
-        for i in range(pointness.shape[0]):
-            point_mask[i] = non_maximum_suppression(pointness[i])
-
-    return point_mask  # (bs, h, w)
-
-def postprocess_descriptor(desc: torch.Tensor, img_w: int, img_h: int) -> np.ndarray:
-    desc = F.interpolate(desc, size=(img_h, img_w), mode="bicubic", align_corners=False)
-    return desc.permute(0, 2, 3, 1).detach().cpu().numpy()  # (bs, h, w, ch)
 
 
 class SuperPointDecoder(nn.Module):
