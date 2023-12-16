@@ -87,14 +87,13 @@ class UnetUpLayer(nn.Module):
 
 
 class Detector(nn.Module):
-    def __init__(self, in_channels: int=128, out_channels: int=2) -> None:
+    def __init__(self, in_channels: int=128, out_channels: int=1) -> None:
         super().__init__()
         self.layers: nn.Sequential = nn.Sequential(
             nn.Conv2d(in_channels, in_channels//2, kernel_size=3, padding=1),
             nn.BatchNorm2d(in_channels//2), 
             nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels//2, out_channels, kernel_size=3, padding=1),
-            nn.Softmax(dim=1),
+            nn.Conv2d(in_channels//2, out_channels, kernel_size=1, padding=0),
         )
 
     def forward(self, x: torch.Tensor):

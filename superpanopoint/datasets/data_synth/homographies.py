@@ -109,8 +109,8 @@ class Translation(TransformHomography):
     tx: float
     ty: float
     def __init__(self, img_w: int, img_h: int, tx: Optional[float]=None, ty: Optional[float]=None) -> None:
-        self.tx = randint(-img_w//3, img_w//3) if tx is None else tx
-        self.ty = randint(-img_h//3, img_h//3) if ty is None else ty
+        self.tx = randint(-img_w//4, img_w//4) if tx is None else tx
+        self.ty = randint(-img_h//4, img_h//4) if ty is None else ty
         self.matrix = np.array([
             [1, 0, self.tx], 
             [0, 1, self.ty], 
@@ -142,7 +142,7 @@ class Scale(TransformHomography):
     sx: float
     sy: float
     def __init__(self, img_w: int, img_h: int, scale: Optional[float]=None, center_x: Optional[int]=None, center_y: Optional[int]=None) -> None:
-        self.scale = uniform(0.5, 2.0) if scale is None else scale
+        self.scale = uniform(0.75, 2.0) if scale is None else scale
         self.center_x = randint(0, img_w) if center_x is None else center_x
         self.center_y = randint(0, img_h) if center_y is None else center_y
         self.matrix = np.vstack([
