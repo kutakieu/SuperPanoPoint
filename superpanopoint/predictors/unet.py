@@ -1,11 +1,23 @@
+from pathlib import Path
+from typing import Union
+
 import numpy as np
 import torch
+from omegaconf import DictConfig
+from torchvision.transforms.v2 import Compose, Normalize, ToTensor
 
 from .base_predictor import BasePredictor
 from .postprocess import non_maximum_suppression
 
 
 class UnetPredictor(BasePredictor):
+    def __init__(self, cfg: Union[str, DictConfig], weight_file: Union[str, Path], device="cpu") -> None:
+        super().__init__(cfg, weight_file, device)
+        self.img_transform = Compose([
+            ToTensor(),
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
     def __call__(self, img: np.ndarray, pointness_threshold: float=0.5) -> tuple[np.ndarray, np.ndarray]:
         img_tensor = self._preprocess(img).to(self.device)
         with torch.no_grad():

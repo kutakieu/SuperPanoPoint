@@ -35,6 +35,16 @@ class MagicPointPredictor(BasePredictor):
         if h != pointness.shape[0] or w != pointness.shape[1]:
             pointness = cv2.resize(pointness, (w, h), interpolation=cv2.INTER_NEAREST)
         return pointness
+
+    def _preprocess(self, img: np.ndarray) -> torch.Tensor:
+        """convert RGB image to grayscale image and resize to multiple of 8"""
+        if isinstance(img, Image.Image):
+            img = np.array(img)
+        h, w = img.shape[:2]
+        if h % 8 != 0 or w % 8 != 0:
+            img = cv2.resize(img, (w // 8 * 8, h // 8 * 8))
+        img = self.img_transform(img)
+        return img.unsqueeze(0)
     
     def calc_prob_map(self, img: Union[Image.Image, np.ndarray], omit_edge_width: int=4) -> float:
         img = np.array(img)
@@ -55,3 +65,11 @@ class MagicPointPredictor(BasePredictor):
         pointness[:omit_edge_width, :] = 0
         pointness[-omit_edge_width:, :] = 0
         return pointness
+
+    def _to_points_array(self, img: np.ndarray, orig_w: int, orig_h: int) -> np.ndarray:
+        h, w = img.shape[:2]
+        coords = np.array(np.where(img > 0)).T.astype(float)
+        coords[:, [0, 1]] = coords[:, [1, 0]]
+        coords[:, 0] *= orig_w / w
+        coords[:, 1] *= orig_h / h
+        return np.round(coords).astype(int)
