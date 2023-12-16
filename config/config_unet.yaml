@@ -1,0 +1,65 @@
+dataset:
+    type: "contrastive"
+    sources:
+        synthetic:
+            folder_name: "PanoContext/perspective"
+            # folder_name: "homographic/panocontext"
+            train: 0.7
+            val: 0.1
+            test: 0.2
+    min_img_size: &min_img_size 256
+    detector_model: "model_magicpoint.pth"
+    detector_cfg: "config/config_magicpoint.yaml"
+    train:
+        mode: "train"
+        aug:
+            crop_size: *min_img_size
+            flip: True
+        num_contrastive_pairs: &num_contrastive_pairs 50
+        loader_args:
+            batch_size: 5
+            num_workers: &num_workers 4
+            shuffle: True
+            drop_last: True
+            pin_memory: True
+    val:
+        mode: "test" ####### Important
+        aug:
+            crop_size: *min_img_size
+            flip: False
+        num_contrastive_pairs: *num_contrastive_pairs
+        loader_args:
+            batch_size: 4
+            num_workers: *num_workers
+            shuffle: False
+            drop_last: False
+            pin_memory: True
+    test:
+        mode: "test" ####### Important
+        aug:
+            crop_size: *min_img_size
+            flip: False
+        num_contrastive_pairs: *num_contrastive_pairs
+        loader_args:
+            batch_size: 4
+            num_workers: *num_workers
+            shuffle: False
+            drop_last: False
+            pin_memory: True
+model:
+    name: "unet"
+    save_path: "./save"
+training:
+    n_epochs: 50
+    optimizer:
+        name: "adam"
+        learning_rate: 0.0005
+    accelerator:
+        device: "gpu"
+        gpus: 1
+    log_every_n_batch: 20
+    early_stopping_patience: 50
+    loss:
+        pointness_positive_weight: 100
+        desc_weight: 0.01
+
