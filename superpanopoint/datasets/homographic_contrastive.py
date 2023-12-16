@@ -34,10 +34,9 @@ class HomographicContrastiveDataset(BaseDataset):
     def __getitem__(self, index: int):
         sample = self.data_samples[index]
         img = np.array(sample.load_img(as_gray=False))
-        pointness = sample.load_points(as_probmap=True)
+        pointness = sample.load_points(as_probmap=True)[:,:,0]
         if self.crop_size is not None:
-            img = cv2.resize(img, (self.crop_size, self.crop_size), interpolation=cv2.INTER_CUBIC)
-            pointness = cv2.resize(pointness, (self.crop_size, self.crop_size), interpolation=cv2.INTER_NEAREST)
+            img, pointness = self._random_crop(img, pointness, crop_size=self.crop_size)
         if self.flip:
             img, pointness = self._random_horizontal_flip(img, pointness)
         h, w = img.shape[:2]
